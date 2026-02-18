@@ -3,140 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dramaku Player</title>
+    <title>Debug Mode</title>
     <style>
-        body { margin: 0; background-color: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        video { width: 100%; height: 100%; object-fit: contain; }
-        
-        /* Tampilan Loading Keren */
-        .status-layer { position: absolute; text-align: center; z-index: 10; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; width: 80%; max-width: 400px; }
-        .hidden { display: none !important; }
-        .btn-retry { margin-top: 15px; padding: 10px 20px; background: #e50914; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        h2 { margin: 0 0 10px 0; font-size: 18px; color: #e50914; }
-        small { color: #aaa; }
+        body { margin: 0; background: #000; color: #0f0; font-family: monospace; padding: 20px; word-wrap: break-word; overflow-y: scroll; }
+        h3 { color: yellow; border-bottom: 1px solid yellow; padding-bottom: 10px; }
+        pre { white-space: pre-wrap; font-size: 12px; }
+        .box { border: 1px solid #333; padding: 10px; margin-bottom: 20px; background: #111; }
     </style>
 </head>
 <body>
 
-    <div class="status-layer" id="statusBox">
-        <h2 id="msgTitle">📡 Menghubungi Satelit...</h2>
-        <small id="msgDetail">Mencari ID Film...</small>
-        <br>
-        <button class="btn-retry hidden" id="btnRetry" onclick="location.reload()">COBA LAGI</button>
+    <h3>🕵️‍♂️ DEBUG MODE (RONTGEN)</h3>
+    <div id="status">Loading...</div>
+
+    <div class="box">
+        <strong>SAMPEL DATA EPISODE 1:</strong>
+        <pre id="jsonResult">Menunggu Data...</pre>
     </div>
 
-    <video id="myVideo" controls autoplay playsinline>
-        Browser HP kamu tidak support video HTML5.
-    </video>
-
     <script>
-        // --- 1. SETTINGAN DARI FILE JS LAMA KAMU ---
-        // Diambil dari file: probe_sansekai_v2.js
+        const params = new URLSearchParams(window.location.search);
+        const bookId = params.get('id');
+        const status = document.getElementById('status');
+        const jsonResult = document.getElementById('jsonResult');
+
+        // URL API DARI FILE PROBE KAMU
         const BASE_API = 'https://api.sansekai.my.id/api/dramabox/allepisode';
 
-        // --- 2. AMBIL PARAMETER DARI ANDROID ---
-        const params = new URLSearchParams(window.location.search);
-        const bookId = params.get('id');       // ID Film
-        let targetEp = params.get('ep') || 1;  // Episode target (Default 1)
-        targetEp = parseInt(targetEp);         // Pastikan jadi angka
-
-        // Elemen UI
-        const statusBox = document.getElementById('statusBox');
-        const msgTitle = document.getElementById('msgTitle');
-        const msgDetail = document.getElementById('msgDetail');
-        const btnRetry = document.getElementById('btnRetry');
-        const videoPlayer = document.getElementById('myVideo');
-
-        // Update Info Awal
-        msgDetail.innerText = "ID: " + bookId + " | Episode: " + targetEp;
-
-        // --- 3. LOGIKA UTAMA (ADAPTASI DARI probe_sansekai_v2.js) ---
-        async function fetchSansekai() {
+        async function debugAPI() {
             try {
-                // Susun URL sesuai file js lama kamu
-                const apiUrl = `${BASE_API}?bookId=${bookId}&lang=in`;
-                console.log("Nembak API: " + apiUrl);
+                if (!bookId) throw new Error("ID Film Kosong di URL");
 
-                const response = await fetch(apiUrl);
+                status.innerText = "Membuka API untuk ID: " + bookId;
                 
-                if (!response.ok) throw new Error("Gagal Konek API (" + response.status + ")");
+                // Tambahkan parameter lang=in sesuai script lama kamu
+                const apiUrl = `${BASE_API}?bookId=${bookId}&lang=in`;
+                
+                const response = await fetch(apiUrl);
+                const data = await response.json();
 
-                const jsonResult = await response.json();
-
-                // LOGIKA CERDAS: Mencari Array Episode (karena struktur API bisa berubah)
-                // Ini logika dari file probe_sansekai_v2.js baris 108-114
+                // CARI ARRAY
                 let episodes = [];
-                if (Array.isArray(jsonResult)) {
-                    episodes = jsonResult;
-                } else if (jsonResult.data && Array.isArray(jsonResult.data)) {
-                    episodes = jsonResult.data;
-                } else if (jsonResult.result && Array.isArray(jsonResult.result)) {
-                    episodes = jsonResult.result;
-                }
+                if (Array.isArray(data)) episodes = data;
+                else if (data.data && Array.isArray(data.data)) episodes = data.data;
+                else if (data.result && Array.isArray(data.result)) episodes = data.result;
 
                 if (episodes.length === 0) {
-                    throw new Error("Daftar Episode Kosong / ID Salah");
+                    jsonResult.innerText = "ZONK! Array Kosong. API tidak kasih data episode.";
+                    return;
                 }
 
-                // --- 4. CARI LINK VIDEO TARGET ---
-                msgTitle.innerText = "🔍 Mencari Link Video...";
-                
-                // Cari episode yang nomornya cocok dengan targetEp
-                const foundEp = episodes.find(item => {
-                    // Cek berbagai kemungkinan nama key (no, episode, id)
-                    let epNum = item.episode || item.no || item.chapter || item.index;
-                    return parseInt(epNum) === targetEp;
-                });
+                status.innerText = `✅ SUKSES! Ditemukan ${episodes.length} Episode.`;
 
-                if (foundEp) {
-                    // Link ketemu! Ambil URL-nya
-                    // Cek berbagai kemungkinan nama key url (videoUrl, url, streamUrl)
-                    const videoUrl = foundEp.videoUrl || foundEp.url || foundEp.stream || foundEp.playUrl;
-
-                    if (videoUrl) {
-                        // SUKSES! MAINIKAN VIDEO 🎬
-                        msgTitle.innerText = "✅ Video Ditemukan!";
-                        msgTitle.style.color = "#46d369"; // Hijau
-                        console.log("Memutar: " + videoUrl);
-
-                        videoPlayer.src = videoUrl;
-                        
-                        // Sembunyikan loading setelah video siap
-                        videoPlayer.oncanplay = () => {
-                            statusBox.classList.add('hidden');
-                        };
-                        
-                        // Paksa Play
-                        var playPromise = videoPlayer.play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(error => {
-                                console.log("Autoplay dicegah, nunggu user klik.");
-                            });
-                        }
-
-                    } else {
-                        throw new Error("Link Video di Episode ini NULL/Kosong.");
-                    }
-
-                } else {
-                    throw new Error(`Episode ${targetEp} belum rilis / tidak ditemukan.`);
-                }
+                // TAMPILKAN ITEM PERTAMA SAJA (BIAR KITA TAU KEY-NYA APA)
+                const sample = episodes[0];
+                jsonResult.innerText = JSON.stringify(sample, null, 2);
 
             } catch (error) {
-                console.error(error);
-                msgTitle.innerText = "❌ Gagal Memutar";
-                msgDetail.innerText = error.message;
-                btnRetry.classList.remove('hidden'); // Munculkan tombol refresh
+                status.innerText = "❌ ERROR FATAL";
+                status.style.color = "red";
+                jsonResult.innerText = error.message;
             }
         }
 
-        // --- EKSEKUSI ---
-        if (bookId) {
-            fetchSansekai();
-        } else {
-            msgTitle.innerText = "⛔ Error ID";
-            msgDetail.innerText = "Tidak ada ID Film yang dikirim.";
-        }
+        debugAPI();
     </script>
 </body>
 </html>
