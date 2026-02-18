@@ -5,67 +5,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nonton Dramaku</title>
     <style>
-        /* HILANGKAN SEMUA MARGIN BIAR FULL SCREEN */
-        body { 
-            margin: 0; 
-            padding: 0;
-            background-color: #000; 
-            color: #fff; 
-            font-family: sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-        
-        video { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; /* Biar video gak gepeng */
-        }
-
-        .info {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.5);
-            padding: 5px;
-            font-size: 12px;
-            color: lime;
-            z-index: 100;
-        }
+        body { margin: 0; background-color: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <div class="info" id="debugText">Memuat ID...</div>
+    <div class="loading" id="statusMsg">
+        <h2>🔍 Mencari Video...</h2>
+        <small id="debugInfo">ID: -</small>
+    </div>
 
-    <video id="myVideo" controls autoplay playsinline>
-        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-        Browser kamu purba, gak support video.
+    <video id="myVideo" controls autoplay playsinline poster="https://via.placeholder.com/1280x720/000000/FFFFFF/?text=Loading...">
+        Browser tidak support.
     </video>
 
     <script>
-        // 1. TANGKAP ID DARI URL (CONTOH: ?id=123&ep=1)
+        // 1. AMBIL ID DARI URL
         const params = new URLSearchParams(window.location.search);
         const bookId = params.get('id');
-        const episode = params.get('ep') || 1;
+        const episode = params.get('ep') || "1"; // Default Episode 1
 
-        // 2. TAMPILKAN DI LAYAR (BUAT BUKTI KALO 404 HILANG)
-        document.getElementById('debugText').innerText = "Vercel Connect! ID: " + bookId + " | Eps: " + episode;
+        const statusMsg = document.getElementById('statusMsg');
+        const debugInfo = document.getElementById('debugInfo');
+        const videoPlayer = document.getElementById('myVideo');
 
-        // 3. LOGIKA LANJUTAN (NANTI KITA ISI LINK FILM ASLI DISINI)
-        // Sekarang biar dia mainin kelinci dulu sebagai tanda SUKSES.
-        
-        var video = document.getElementById('myVideo');
-        
-        // Paksa Play (Kadang browser HP ngeblok autoplay)
-        video.play().catch(function(error) {
-            console.log("Autoplay dicegah browser, user harus klik play manual.");
-        });
+        debugInfo.innerText = "ID: " + bookId + " | Eps: " + episode;
 
+        // 2. FUNGSI UTAMA: AMBIL DATA DARI JSON
+        async function loadVideo() {
+            try {
+                // Ambil file episodes.json
+                const response = await fetch('episodes.json?v=' + new Date().getTime()); // Pake time biar gak kena cache
+                const data = await response.json();
+
+                // Cari Film berdasarkan ID
+                const movieData = data[bookId];
+
+                if (movieData) {
+                    // Cari Episode
+                    const videoUrl = movieData.episodes[episode];
+
+                    if (videoUrl) {
+                        // KETEMU! MAININ VIDEONYA
+                        statusMsg.innerHTML = "<h2>✅ Video Ditemukan!</h2>";
+                        console.log("Memutar: " + videoUrl);
+                        
+                        videoPlayer.src = videoUrl;
+                        videoPlayer.play().catch(e => console.log("Butuh play manual"));
+                        
+                        // Sembunyikan pesan loading setelah 1 detik
+                        setTimeout(() => { statusMsg.style.display = 'none'; }, 1000);
+
+                    } else {
+                        statusMsg.innerHTML = "<h2 style='color:red'>❌ Episode Belum Rilis</h2>";
+                    }
+                } else {
+                    statusMsg.innerHTML = "<h2 style='color:red'>❌ Film Tidak Ditemukan</h2><p>ID Salah / Belum Terdaftar</p>";
+                }
+
+            } catch (error) {
+                console.error(error);
+                statusMsg.innerHTML = "<h2 style='color:red'>⚠️ Error Koneksi</h2>";
+            }
+        }
+
+        // Jalankan Fungsi
+        if(bookId) {
+            loadVideo();
+        } else {
+            statusMsg.innerHTML = "<h2>⛔ ID Tidak Valid</h2>";
+        }
     </script>
 </body>
 </html>
