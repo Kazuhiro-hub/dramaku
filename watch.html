@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nonton Dramaku</title>
+    <style>
+        /* HILANGKAN SEMUA MARGIN BIAR FULL SCREEN */
+        body { 
+            margin: 0; 
+            padding: 0;
+            background-color: #000; 
+            color: #fff; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        
+        video { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; /* Biar video gak gepeng */
+        }
+
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px;
+            font-size: 12px;
+            color: lime;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="info" id="debugText">Memuat ID...</div>
+
+    <video id="myVideo" controls autoplay playsinline>
+        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+        Browser kamu purba, gak support video.
+    </video>
+
+    <script>
+        // 1. TANGKAP ID DARI URL (CONTOH: ?id=123&ep=1)
+        const params = new URLSearchParams(window.location.search);
+        const bookId = params.get('id');
+        const episode = params.get('ep') || 1;
+
+        // 2. TAMPILKAN DI LAYAR (BUAT BUKTI KALO 404 HILANG)
+        document.getElementById('debugText').innerText = "Vercel Connect! ID: " + bookId + " | Eps: " + episode;
+
+        // 3. LOGIKA LANJUTAN (NANTI KITA ISI LINK FILM ASLI DISINI)
+        // Sekarang biar dia mainin kelinci dulu sebagai tanda SUKSES.
+        
+        var video = document.getElementById('myVideo');
+        
+        // Paksa Play (Kadang browser HP ngeblok autoplay)
+        video.play().catch(function(error) {
+            console.log("Autoplay dicegah browser, user harus klik play manual.");
+        });
+
+    </script>
+</body>
+</html>
