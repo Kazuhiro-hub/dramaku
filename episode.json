@@ -1,0 +1,15 @@
+{
+  "42000005284": {
+    "title": "Drama Korea Test",
+    "episodes": {
+      "1": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+      "2": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
+    }
+  },
+  "CONTOH_ID_LAIN": {
+    "title": "Film Action",
+    "episodes": {
+      "1": "LINK_FILM_KAMU_DISINI.mp4"
+    }
+  }
+}
