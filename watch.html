@@ -3,123 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player Dramaku</title>
+    <title>Ultimate Player Dramaku</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        /* Desain Layar Hitam Polos ala Bioskop */
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background: #000000; 
-            overflow: hidden; /* Hilangkan scroll bar */
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            width: 100vw;
-        }
-        
-        /* Video memenuhi layar */
-        video { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-        }
-
-        /* Tampilan Loading */
-        #statusMsg { 
-            color: #FFFFFF; 
-            font-family: sans-serif; 
-            font-size: 14px; 
-            position: absolute; 
-            text-align: center;
-        }
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        #statusMsg { color: #FFF; font-family: sans-serif; font-size: 14px; position: absolute; text-align: center; }
         .error { color: #E50914 !important; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="statusMsg">Memuat Server Sansekai... ⏳</div>
-    
+    <div id="statusMsg">Memuat Server... ⏳</div>
     <div id="videoContainer"></div>
 
     <script>
-        // Tangkap parameter URL dari Android (?id=xxx&ep=yyy)
         const params = new URLSearchParams(window.location.search);
         const bookId = params.get('id');
-        const epNum = parseInt(params.get('ep')) || 1; // Default ke episode 1 kalau kosong
+        const epNum = parseInt(params.get('ep')) || 1; 
+        const platform = params.get('pl') || 'dramabox'; // Default dramabox kalau gak dikasih tau
 
         const statusMsg = document.getElementById('statusMsg');
         const videoContainer = document.getElementById('videoContainer');
 
-        const BASE_API = 'https://api.sansekai.my.id/api/dramabox/allepisode';
-
         async function loadVideo() {
             try {
-                if (!bookId) throw new Error("ID Film kosong, tidak bisa memutar.");
+                if (!bookId) throw new Error("ID Film kosong Bosqu!");
+                statusMsg.innerText = `Memuat Eps ${epNum} dari ${platform.toUpperCase()}... 🔍`;
 
-                statusMsg.innerText = `Mencari Data Episode ${epNum}... 🔍`;
+                let finalVideoUrl = "";
+                let isHlsFormat = false;
 
-                // 1. TEMBAK API SANSEKAI
-                const apiUrl = `${BASE_API}?bookId=${bookId}&lang=in`;
-                const response = await fetch(apiUrl);
-                const data = await response.json();
+                // ==========================================
+                // JALUR 1: LOGIKA DRAMABOX (.mp4)
+                // ==========================================
+                if (platform === 'dramabox') {
+                    const apiUrl = `https://api.sansekai.my.id/api/dramabox/allepisode?bookId=${bookId}&lang=in`;
+                    const res = await fetch(apiUrl);
+                    const data = await res.json();
+                    
+                    let episodes = Array.isArray(data) ? data : (data.data || data.result || []);
+                    if (episodes.length === 0) throw new Error("Data DramaBox kosong.");
 
-                // 2. CARI WADAH ARRAY EPISODE
-                let episodes = [];
-                if (Array.isArray(data)) episodes = data;
-                else if (data.data && Array.isArray(data.data)) episodes = data.data;
-                else if (data.result && Array.isArray(data.result)) episodes = data.result;
-
-                if (episodes.length === 0) {
-                    throw new Error("API Sansekai tidak memberikan data episode.");
-                }
-                
-                // Lapor ke Android berapa jumlah episode aslinya
-                if (window.Android && window.Android.setTotalEpisodes) {
-                window.Android.setTotalEpisodes(episodes.length);
-                }
-
-                // 3. PILIH EPISODE YANG TEPAT
-                // Karena array dimulai dari 0, Episode 1 = array[0], Episode 2 = array[1]
-                const targetIndex = epNum - 1;
-                if (targetIndex < 0 || targetIndex >= episodes.length) {
-                    throw new Error(`Episode ${epNum} belum tersedia / belum rilis.`);
-                }
-                const episodeData = episodes[targetIndex];
-
-                // 4. BONGKAR JSON UNTUK CARI LINK MP4 (Berdasarkan screenshot rontgen)
-                let finalMp4Url = "";
-                if (episodeData.cdnList && episodeData.cdnList.length > 0) {
-                    const videoPathList = episodeData.cdnList[0].videoPathList;
-                    if (videoPathList && videoPathList.length > 0) {
-                        // Cari yang kualitasnya 1080p, kalau gak ada sikat yang pertama (720p/bebas)
-                        const hdVideo = videoPathList.find(v => v.quality === 1080);
-                        finalMp4Url = hdVideo ? hdVideo.videoPath : videoPathList[0].videoPath;
+                    // Lapor Total Episode ke Android
+                    if (window.Android && window.Android.setTotalEpisodes) {
+                        window.Android.setTotalEpisodes(episodes.length);
                     }
+
+                    const targetIndex = epNum - 1;
+                    if (targetIndex < 0 || targetIndex >= episodes.length) throw new Error(`Episode ${epNum} belum rilis.`);
+                    
+                    const epsData = episodes[targetIndex];
+                    if (epsData.cdnList && epsData.cdnList[0].videoPathList) {
+                        const hdVideo = epsData.cdnList[0].videoPathList.find(v => v.quality === 1080);
+                        finalVideoUrl = hdVideo ? hdVideo.videoPath : epsData.cdnList[0].videoPathList[0].videoPath;
+                    }
+
+                // ==========================================
+                // JALUR 2: LOGIKA REELSHORT (.m3u8)
+                // ==========================================
+                } else if (platform === 'reelshort') {
+                    // A. Ambil Detail buat tau Total Episode
+                    const detailUrl = `https://api.sansekai.my.id/api/reelshort/detail?bookId=${bookId}`;
+                    const detailRes = await fetch(detailUrl);
+                    const detailData = await detailRes.json();
+                    
+                    if (detailData.totalEpisodes) {
+                        if (window.Android && window.Android.setTotalEpisodes) {
+                            window.Android.setTotalEpisodes(detailData.totalEpisodes);
+                        }
+                    }
+
+                    // B. Ambil URL Video spesifik per Episode (Sistem Anti-Spam)
+                    const epsUrl = `https://api.sansekai.my.id/api/reelshort/episode?bookId=${bookId}&episodeNumber=${epNum}`;
+                    const epsRes = await fetch(epsUrl);
+                    const epsData = await epsRes.json();
+
+                    if (!epsData.videoList || epsData.videoList.length === 0) {
+                        throw new Error(`Video Reelshort Eps ${epNum} tidak ditemukan/dikunci.`);
+                    }
+
+                    // Cari kualitas terbaik (biasanya 720/1080)
+                    const goodVideo = epsData.videoList.find(v => v.quality >= 720);
+                    finalVideoUrl = goodVideo ? goodVideo.url : epsData.videoList[0].url;
+                    isHlsFormat = true; // Tandai kalau ini butuh mesin HLS.js
                 }
 
-                if (!finalMp4Url) {
-                    throw new Error("Link .mp4 gagal diekstrak dari server.");
-                }
+                if (!finalVideoUrl) throw new Error("Gagal mengekstrak link video.");
 
-                // 5. SUKSES! MUNCULKAN VIDEO KE LAYAR
-                statusMsg.style.display = 'none'; // Sembunyikan tulisan loading
-                
-                // Masukkan tag HTML5 Video, dan Android JS Interface akan otomatis menangkap 'onended'
-                videoContainer.innerHTML = `
-                    <video id="myVideo" controls autoplay playsinline>
-                        <source src="${finalMp4Url}" type="video/mp4">
-                    </video>
-                `;
+                // ==========================================
+                // MUNCULKAN VIDEO KE LAYAR
+                // ==========================================
+                statusMsg.style.display = 'none'; 
+                videoContainer.innerHTML = `<video id="myVideo" controls autoplay playsinline></video>`;
+                const videoElement = document.getElementById('myVideo');
+
+                // Lapor kalau video habis (Biar bisa Swipe Next otomatis)
+                videoElement.onended = function() { 
+                    if (window.Android && window.Android.onVideoEnded) window.Android.onVideoEnded(); 
+                };
+
+                // Mesin Pemutar
+                if (isHlsFormat) {
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(finalVideoUrl);
+                        hls.attachMedia(videoElement);
+                        hls.on(Hls.Events.MANIFEST_PARSED, function() { videoElement.play(); });
+                    } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                        // Fallback buat browser bawaan yang udah support m3u8
+                        videoElement.src = finalVideoUrl;
+                        videoElement.play();
+                    }
+                } else {
+                    // Putar .mp4 biasa
+                    videoElement.src = finalVideoUrl;
+                    videoElement.play();
+                }
 
             } catch (error) {
-                // Tampilkan error kalau gagal
-                statusMsg.innerHTML = `❌ Gagal Memutar:<br>${error.message}`;
+                statusMsg.innerHTML = `❌ Error:<br>${error.message}`;
                 statusMsg.classList.add('error');
             }
         }
 
-        // Jalankan fungsinya
         loadVideo();
     </script>
 </body>
