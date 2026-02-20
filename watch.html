@@ -73,6 +73,11 @@
                 if (episodes.length === 0) {
                     throw new Error("API Sansekai tidak memberikan data episode.");
                 }
+                
+                // Lapor ke Android berapa jumlah episode aslinya
+                if (window.Android && window.Android.setTotalEpisodes) {
+                window.Android.setTotalEpisodes(episodes.length);
+                }
 
                 // 3. PILIH EPISODE YANG TEPAT
                 // Karena array dimulai dari 0, Episode 1 = array[0], Episode 2 = array[1]
