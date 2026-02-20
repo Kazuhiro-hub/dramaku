@@ -3,70 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debug Mode</title>
+    <title>Player Dramaku</title>
     <style>
-        body { margin: 0; background: #000; color: #0f0; font-family: monospace; padding: 20px; word-wrap: break-word; overflow-y: scroll; }
-        h3 { color: yellow; border-bottom: 1px solid yellow; padding-bottom: 10px; }
-        pre { white-space: pre-wrap; font-size: 12px; }
-        .box { border: 1px solid #333; padding: 10px; margin-bottom: 20px; background: #111; }
+        /* Desain Layar Hitam Polos ala Bioskop */
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #000000; 
+            overflow: hidden; /* Hilangkan scroll bar */
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            width: 100vw;
+        }
+        
+        /* Video memenuhi layar */
+        video { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+        }
+
+        /* Tampilan Loading */
+        #statusMsg { 
+            color: #FFFFFF; 
+            font-family: sans-serif; 
+            font-size: 14px; 
+            position: absolute; 
+            text-align: center;
+        }
+        .error { color: #E50914 !important; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h3>🕵️‍♂️ DEBUG MODE (RONTGEN)</h3>
-    <div id="status">Loading...</div>
-
-    <div class="box">
-        <strong>SAMPEL DATA EPISODE 1:</strong>
-        <pre id="jsonResult">Menunggu Data...</pre>
-    </div>
+    <div id="statusMsg">Memuat Server Sansekai... ⏳</div>
+    
+    <div id="videoContainer"></div>
 
     <script>
+        // Tangkap parameter URL dari Android (?id=xxx&ep=yyy)
         const params = new URLSearchParams(window.location.search);
         const bookId = params.get('id');
-        const status = document.getElementById('status');
-        const jsonResult = document.getElementById('jsonResult');
+        const epNum = parseInt(params.get('ep')) || 1; // Default ke episode 1 kalau kosong
 
-        // URL API DARI FILE PROBE KAMU
+        const statusMsg = document.getElementById('statusMsg');
+        const videoContainer = document.getElementById('videoContainer');
+
         const BASE_API = 'https://api.sansekai.my.id/api/dramabox/allepisode';
 
-        async function debugAPI() {
+        async function loadVideo() {
             try {
-                if (!bookId) throw new Error("ID Film Kosong di URL");
+                if (!bookId) throw new Error("ID Film kosong, tidak bisa memutar.");
 
-                status.innerText = "Membuka API untuk ID: " + bookId;
-                
-                // Tambahkan parameter lang=in sesuai script lama kamu
+                statusMsg.innerText = `Mencari Data Episode ${epNum}... 🔍`;
+
+                // 1. TEMBAK API SANSEKAI
                 const apiUrl = `${BASE_API}?bookId=${bookId}&lang=in`;
-                
                 const response = await fetch(apiUrl);
                 const data = await response.json();
 
-                // CARI ARRAY
+                // 2. CARI WADAH ARRAY EPISODE
                 let episodes = [];
                 if (Array.isArray(data)) episodes = data;
                 else if (data.data && Array.isArray(data.data)) episodes = data.data;
                 else if (data.result && Array.isArray(data.result)) episodes = data.result;
 
                 if (episodes.length === 0) {
-                    jsonResult.innerText = "ZONK! Array Kosong. API tidak kasih data episode.";
-                    return;
+                    throw new Error("API Sansekai tidak memberikan data episode.");
                 }
 
-                status.innerText = `✅ SUKSES! Ditemukan ${episodes.length} Episode.`;
+                // 3. PILIH EPISODE YANG TEPAT
+                // Karena array dimulai dari 0, Episode 1 = array[0], Episode 2 = array[1]
+                const targetIndex = epNum - 1;
+                if (targetIndex < 0 || targetIndex >= episodes.length) {
+                    throw new Error(`Episode ${epNum} belum tersedia / belum rilis.`);
+                }
+                const episodeData = episodes[targetIndex];
 
-                // TAMPILKAN ITEM PERTAMA SAJA (BIAR KITA TAU KEY-NYA APA)
-                const sample = episodes[0];
-                jsonResult.innerText = JSON.stringify(sample, null, 2);
+                // 4. BONGKAR JSON UNTUK CARI LINK MP4 (Berdasarkan screenshot rontgen)
+                let finalMp4Url = "";
+                if (episodeData.cdnList && episodeData.cdnList.length > 0) {
+                    const videoPathList = episodeData.cdnList[0].videoPathList;
+                    if (videoPathList && videoPathList.length > 0) {
+                        // Cari yang kualitasnya 1080p, kalau gak ada sikat yang pertama (720p/bebas)
+                        const hdVideo = videoPathList.find(v => v.quality === 1080);
+                        finalMp4Url = hdVideo ? hdVideo.videoPath : videoPathList[0].videoPath;
+                    }
+                }
+
+                if (!finalMp4Url) {
+                    throw new Error("Link .mp4 gagal diekstrak dari server.");
+                }
+
+                // 5. SUKSES! MUNCULKAN VIDEO KE LAYAR
+                statusMsg.style.display = 'none'; // Sembunyikan tulisan loading
+                
+                // Masukkan tag HTML5 Video, dan Android JS Interface akan otomatis menangkap 'onended'
+                videoContainer.innerHTML = `
+                    <video id="myVideo" controls autoplay playsinline>
+                        <source src="${finalMp4Url}" type="video/mp4">
+                    </video>
+                `;
 
             } catch (error) {
-                status.innerText = "❌ ERROR FATAL";
-                status.style.color = "red";
-                jsonResult.innerText = error.message;
+                // Tampilkan error kalau gagal
+                statusMsg.innerHTML = `❌ Gagal Memutar:<br>${error.message}`;
+                statusMsg.classList.add('error');
             }
         }
 
-        debugAPI();
+        // Jalankan fungsinya
+        loadVideo();
     </script>
 </body>
 </html>
