@@ -83,17 +83,20 @@
         let currentIndex = -1;    
         let currentQuality = 720; 
 
-        // LOAD KATALOG
-        fetch('catalog.json')
-            .then(res => res.json())
-            .then(data => {
-                allMovies = data;
-                document.getElementById('loadingText').style.display = 'none';
-                renderMovies(data);
-            })
-            .catch(err => {
-                document.getElementById('loadingText').innerText = "Gagal memuat catalog.json";
-            });
+        // 🚀 MESIN DUAL CORE: NARIK 2 FILE SEKALIGUS (CATALOG & REELSHORT)
+        Promise.all([
+            fetch('catalog.json').then(res => res.json()).catch(() => []),
+            fetch('reelshort.json').then(res => res.json()).catch(() => [])
+        ]).then(([dramaboxData, reelshortData]) => {
+            // Gabungkan kedua data jadi satu
+            allMovies = [...dramaboxData, ...reelshortData];
+            
+            document.getElementById('loadingText').style.display = 'none';
+            renderMovies(allMovies);
+        }).catch(err => {
+            document.getElementById('loadingText').innerText = "Gagal memuat katalog film dari server.";
+            console.error(err);
+        });
 
         function renderMovies(movies) {
             const grid = document.getElementById('movieGrid');
@@ -264,4 +267,5 @@
         }
     </script>
 </body>
+
 </html>
