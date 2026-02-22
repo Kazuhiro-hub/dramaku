@@ -2,170 +2,432 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dramaku - Bioskop Mini</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dramaku App</title>
     <style>
-        /* Tampilan Mode Gelap ala Netflix */
-        body { 
-            background-color: #141414; 
-            color: white; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-        }
-        h1 { 
-            text-align: center; 
-            margin-top: 20px; 
-            color: #e50914; 
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+        :root { --primary: #e50914; --bg: #0f0f0f; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; padding-bottom: 70px; /* Jarak buat Bottom Nav */ }
         
-        /* Grid Poster Film */
-        .movie-grid { 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 20px; 
-            padding: 20px; 
-        }
-        .movie-card { 
-            width: 160px; 
-            cursor: pointer; 
-            transition: transform 0.3s; 
-            background: #222;
-            border-radius: 10px;
-            padding-bottom: 10px;
-        }
-        .movie-card:hover { 
-            transform: scale(1.08); 
-            box-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
-        }
-        .movie-card img { 
-            width: 100%; 
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
-        }
-        .movie-card h3 { 
-            font-size: 14px; 
-            text-align: center; 
-            margin: 10px 5px 0 5px; 
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        /* Navbar Atas */
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
+        .navbar-brand { color: var(--primary); font-size: 24px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
+        .search-container { display: flex; gap: 8px; flex: 1; justify-content: flex-end;}
+        .search-box { padding: 8px 15px; border-radius: 20px; border: 1px solid #444; background: rgba(255,255,255,0.1); color: white; outline: none; width: 100%; max-width: 200px; }
+        .search-btn { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
 
-        /* Modal / Layar Tancap Iframe */
-        #playerModal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.95); 
-            z-index: 1000; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-        }
-        #playerModal iframe { 
-            width: 90%; 
-            max-width: 900px; 
-            height: 50vw; 
-            max-height: 500px; 
-            border: 2px solid #e50914; 
-            border-radius: 10px; 
-            background: #000;
-        }
-        .close-btn { 
-            position: absolute; 
-            top: 20px; 
-            right: 30px; 
-            font-size: 40px; 
-            color: #fff; 
-            cursor: pointer; 
-            font-weight: bold; 
-            transition: color 0.3s;
-        }
-        .close-btn:hover { color: #e50914; }
+        /* Tampilan Sections */
+        .view-section { display: none; }
+        
+        /* Animasi Loader (Pasti di Tengah) */
+        #globalLoader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; }
+        .loader-logo { font-size: 2.5rem; font-weight: 900; color: var(--primary); letter-spacing: 5px; animation: pulse 0.8s infinite alternate; }
+        @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.1); text-shadow: 0 0 20px rgba(229, 9, 20, 0.8); } }
+
+        /* Hero Banner */
+        .hero { height: 50vh; background-size: cover; background-position: center; position: relative; display: flex; align-items: flex-end; padding: 30px 20px; }
+        .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg) 5%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.7) 100%); }
+        .hero-content { position: relative; z-index: 5; width: 100%; }
+        .hero-title { font-size: 2rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 5px #000; }
+        .hero-desc { font-size: 0.95rem; line-height: 1.4; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #ddd; }
+        .info-btn { background: rgba(255,255,255,0.2); color: white; border: 1px solid #fff; padding: 8px 20px; border-radius: 5px; font-weight: bold; backdrop-filter: blur(5px); }
+
+        /* Slider */
+        .row { padding: 15px 20px 5px 20px; }
+        .row h2 { font-size: 1.1rem; margin-bottom: 10px; color: #fff; font-weight: bold; }
+        .row-posters { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 10px; }
+        .row-posters::-webkit-scrollbar { display: none; }
+        .poster { width: 110px; flex-shrink: 0; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; } /* BUG FIX: UKURAN SERAGAM */
+
+        /* Grid Umum (Jelajah & Riwayat) */
+        .page-container { padding: 20px; min-height: 100vh; }
+        .page-header { font-size: 1.5rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 20px; }
+        .sort-select { background: #222; color: white; border: 1px solid var(--primary); padding: 8px; border-radius: 5px; width: 100%; margin-bottom: 20px; outline: none; }
+        
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; } /* 3 Kolom buat HP */
+        @media (max-width: 400px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
+        .grid-item { width: 100%; }
+        .grid-item img { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); } /* BUG FIX: UKURAN SERAGAM */
+        .grid-item p { text-align: center; margin-top: 5px; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccc; }
+
+        /* Pagination */
+        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
+        .page-btn { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; }
+
+        /* Detail View */
+        #detailView { min-height: 100vh; position: relative; background-size: cover; background-position: center; background-attachment: fixed; }
+        #detailView::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 1; }
+        .back-nav { position: relative; z-index: 10; padding: 15px 20px; font-size: 1.1rem; color: #aaa; }
+        .detail-content { position: relative; z-index: 10; padding: 10px 20px; }
+        .detail-title { font-size: 2rem; font-weight: 900; margin-bottom: 10px; }
+        .detail-meta { color: #aaa; font-size: 0.9rem; margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
+        .rating-badge { background: var(--primary); color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .detail-overview { font-size: 0.95rem; line-height: 1.5; color: #ccc; margin-bottom: 25px; }
+        
+        /* Kartu Aksi Detail */
+        .action-posters { display: flex; gap: 15px; justify-content: center; }
+        .action-card { width: 140px; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; position: relative; border: 2px solid #333; }
+        .action-card img { width: 100%; height: 100%; object-fit: cover; }
+        .action-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
+        .action-card .label { position: absolute; bottom: 15px; left: 0; width: 100%; text-align: center; font-size: 0.9rem; font-weight: bold; color: white; z-index: 2; }
+        .card-movie { border-color: var(--primary); }
+
+        /* Modal Player */
+        #playerModal { display: none; position: fixed; inset: 0; background: #000; z-index: 2000; flex-direction: column; }
+        .player-header { padding: 15px; display: flex; justify-content: space-between; background: #111; }
+        .server-selector { background: #222; color: white; padding: 8px; border-radius: 5px; border: 1px solid var(--primary); }
+        #playerModal iframe { width: 100%; flex: 1; border: none; }
+        .close-btn { font-size: 25px; color: #fff; line-height: 1; }
+
+        /* BOTTOM NAVIGATION BAR (ANDROID STYLE) */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #777; font-size: 0.75rem; font-weight: bold; }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 1.4rem; margin-bottom: 3px; }
     </style>
 </head>
 <body>
 
-    <h1>🍿 Dramaku 🍿</h1>
-    <p style="text-align: center; color: #888;">Film Bioskop Trending Hari Ini</p>
-    
-    <div class="movie-grid" id="movieGrid">
-        <h3 style="color: white;">⏳ Menjemput data dari server TMDB...</h3>
+    <div class="navbar" id="topNavbar">
+        <div class="navbar-brand">DRAMAKU</div>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-box" placeholder="Cari judul...">
+            <button class="search-btn" onclick="executeSearch()">Cari</button>
+        </div>
+    </div>
+
+    <div id="globalLoader" class="view-section">
+        <div class="loader-logo">DRAMAKU</div>
+    </div>
+
+    <div id="homeView" class="view-section">
+        <div id="hero" class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title" id="heroTitle">Memuat...</h1>
+                <p class="hero-desc" id="heroDesc">Menyinkronkan...</p>
+                <button class="info-btn" id="heroPlayBtn">Selengkapnya</button>
+            </div>
+        </div>
+        <div class="row"><h2>Sedang Trending</h2><div class="row-posters" id="row-trending"></div></div>
+        <div class="row"><h2>Action Super Tegang</h2><div class="row-posters" id="row-action"></div></div>
+        <div class="row"><h2>Horor Bikin Merinding</h2><div class="row-posters" id="row-horror"></div></div>
+        <div class="row"><h2>Komedi Bikin Ngakak</h2><div class="row-posters" id="row-comedy"></div></div>
+    </div>
+
+    <div id="exploreView" class="view-section page-container">
+        <h2 id="exploreTitle" class="page-header">Jelajah Film</h2>
+        <select id="sortSelect" class="sort-select" onchange="applySort()">
+            <option value="popularity.desc">Paling Banyak Ditonton</option>
+            <option value="vote_average.desc">Rating Tertinggi</option>
+            <option value="primary_release_date.desc">Terbaru Dirilis</option>
+        </select>
+        <div class="grid-container" id="exploreGrid"></div>
+        <div class="pagination" id="paginationControls">
+            <button class="page-btn" onclick="changePage(-1)">Kembali</button>
+            <span style="font-weight:bold; color:#aaa;">Hal <span id="currentPageText">1</span></span>
+            <button class="page-btn" onclick="changePage(1)">Lanjut</button>
+        </div>
+    </div>
+
+    <div id="historyView" class="view-section page-container">
+        <h2 class="page-header">Riwayat Tontonan</h2>
+        <div class="grid-container" id="historyGrid"></div>
+    </div>
+
+    <div id="detailView" class="view-section">
+        <div class="back-nav" onclick="goBack()">❮ Kembali</div>
+        <div class="detail-content">
+            <h1 class="detail-title" id="detTitle">Memuat...</h1>
+            <div class="detail-meta">
+                <span class="rating-badge" id="detRating">0.0</span>
+                <span id="detYear">N/A</span>
+            </div>
+            <p class="detail-overview" id="detDesc">Menarik sinopsis...</p>
+            
+            <div class="action-posters">
+                <div class="action-card card-movie" onclick="startPlayback('movie')">
+                    <img id="cardMovieImg" src="">
+                    <div class="label">FULL MOVIE</div>
+                </div>
+                <div class="action-card card-trailer" id="trailerCard" onclick="startPlayback('trailer')">
+                    <img id="cardTrailerImg" src="">
+                    <div class="label">TRAILER</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="playerModal">
-        <span class="close-btn" onclick="closePlayer()">✖</span>
+        <div class="player-header">
+            <select class="server-selector" id="serverSelect" onchange="changeServer()">
+                <option value="vidlink">VidLink (Auto Sub Indo)</option>
+                <option value="vidsrc">VidSrc</option>
+            </select>
+            <span class="close-btn" onclick="closePlayer()">✖</span>
+        </div>
         <iframe id="videoIframe" src="" allowfullscreen></iframe>
     </div>
 
+    <div class="bottom-nav" id="bottomNav">
+        <div class="nav-item active" id="nav-home" onclick="navigateTo('home')">
+            <div class="nav-icon">🏠</div>
+            <span>Beranda</span>
+        </div>
+        <div class="nav-item" id="nav-explore" onclick="navigateTo('explore', {mode: 'popular'})">
+            <div class="nav-icon">🔍</div>
+            <span>Jelajah</span>
+        </div>
+        <div class="nav-item" id="nav-history" onclick="navigateTo('history')">
+            <div class="nav-icon">🕒</div>
+            <span>Riwayat</span>
+        </div>
+    </div>
+
     <script>
-        // Kunci Rahasia Kamu
         const API_KEY = '5c9e36288ce1ccb6f161f613f06b190e';
         const BASE_URL = 'https://api.themoviedb.org/3';
         const IMG_URL = 'https://image.tmdb.org/t/p/w500';
 
-        // Fungsi Menarik Film Trending (Update Otomatis Tiap Hari)
-        async function getMovies() {
-            try {
-                // Minta data ke TMDB pakai Bahasa Indonesia
-                const res = await fetch(`${BASE_URL}/trending/movie/day?api_key=${API_KEY}&language=id-ID`);
-                const data = await res.json();
-                tampilkanFilm(data.results);
-            } catch (error) {
-                document.getElementById('movieGrid').innerHTML = '<h3 style="color: red;">⛔ Gagal menyambung ke server TMDB. Coba lagi nanti!</h3>';
+        let currentExploreMode = 'popular'; 
+        let currentSort = 'popularity.desc';
+        let searchQuery = '';
+        let currentPage = 1;
+        let totalPages = 1;
+        let activeMovieId = null;
+        let activeTrailerKey = null;
+
+        // TAMPILAN & NAVIGASI
+        function showSection(sectionId) {
+            document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
+            const target = document.getElementById(sectionId);
+            target.style.display = (sectionId === 'globalLoader') ? 'flex' : 'block';
+            
+            // Atur tampilan Navbar Atas & Bottom Nav
+            document.getElementById('topNavbar').style.display = (sectionId === 'detailView' || sectionId === 'globalLoader') ? 'none' : 'flex';
+            document.getElementById('bottomNav').style.display = (sectionId === 'detailView' || sectionId === 'globalLoader') ? 'none' : 'flex';
+            
+            if(sectionId !== 'globalLoader') window.scrollTo(0, 0);
+        }
+
+        function updateBottomNav(page) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            if(page === 'home' || page === 'explore' || page === 'history') {
+                document.getElementById('nav-' + page).classList.add('active');
             }
         }
 
-        // Fungsi Mencetak Poster Film ke Layar
-        function tampilkanFilm(movies) {
-            const grid = document.getElementById('movieGrid');
-            grid.innerHTML = ''; // Bersihkan tulisan loading
-            
-            movies.forEach(movie => {
-                if (movie.poster_path) {
-                    const card = document.createElement('div');
-                    card.className = 'movie-card';
-                    card.onclick = () => playMovie(movie.id); // Pas diklik, putar filmnya
-                    
-                    card.innerHTML = `
-                        <img src="${IMG_URL + movie.poster_path}" alt="${movie.title}">
-                        <h3>${movie.title}</h3>
-                    `;
-                    grid.appendChild(card);
+        function navigateTo(page, params = {}, pushState = true) {
+            if (pushState) history.pushState({ page, params }, '', `#${page}`);
+            updateBottomNav(page);
+
+            if (page === 'home') {
+                showSection('homeView');
+            } else if (page === 'explore') {
+                openExplore(params.mode || 'popular', params.page || 1, params.query || '');
+            } else if (page === 'history') {
+                loadHistory();
+            } else if (page === 'detail') {
+                loadMovieDetail(params.id);
+            }
+        }
+
+        window.addEventListener('popstate', function(e) {
+            closePlayer();
+            if (e.state && e.state.page) navigateTo(e.state.page, e.state.params, false);
+            else navigateTo('home', {}, false);
+        });
+
+        // BERANDA
+        async function initHome() {
+            try {
+                const resHero = await fetch(`${BASE_URL}/trending/movie/week?api_key=${API_KEY}&language=id-ID`);
+                const dataHero = await resHero.json();
+                const heroMovie = dataHero.results[0];
+                document.getElementById('hero').style.backgroundImage = `url(https://image.tmdb.org/t/p/original${heroMovie.backdrop_path})`;
+                document.getElementById('heroTitle').innerText = heroMovie.title;
+                document.getElementById('heroDesc').innerText = heroMovie.overview;
+                document.getElementById('heroPlayBtn').onclick = () => navigateTo('detail', { id: heroMovie.id });
+
+                fetchRow(`${BASE_URL}/trending/movie/day?api_key=${API_KEY}&language=id-ID`, 'row-trending');
+                fetchRow(`${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=28&language=id-ID&sort_by=popularity.desc`, 'row-action');
+                fetchRow(`${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=27&language=id-ID&sort_by=popularity.desc`, 'row-horror');
+                fetchRow(`${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=35&language=id-ID&sort_by=popularity.desc`, 'row-comedy');
+            } catch(e) {}
+        }
+
+        async function fetchRow(url, rowId) {
+            const res = await fetch(url);
+            const data = await res.json();
+            const row = document.getElementById(rowId);
+            row.innerHTML = '';
+            data.results.forEach(movie => {
+                if(movie.poster_path) {
+                    const img = document.createElement('img');
+                    img.src = IMG_URL + movie.poster_path;
+                    img.className = 'poster';
+                    img.onclick = () => navigateTo('detail', { id: movie.id });
+                    row.appendChild(img);
                 }
             });
         }
 
-        // JURUS IFRAME: Minta Video ke Server Gratisan
-        function playMovie(tmdbId) {
+        // PENCARIAN & JELAJAH
+        function executeSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if(!query) return;
+            navigateTo('explore', { mode: 'search', query: query, page: 1 });
+        }
+
+        function applySort() {
+            currentSort = document.getElementById('sortSelect').value;
+            navigateTo('explore', { mode: 'popular', page: 1 });
+        }
+
+        async function openExplore(mode, pageNum, query) {
+            showSection('globalLoader');
+            currentExploreMode = mode;
+            currentPage = pageNum;
+            if (query) searchQuery = query;
+
+            let url = '';
+            if (mode === 'popular') {
+                document.getElementById('exploreTitle').innerText = 'Jelajah Film';
+                document.getElementById('sortSelect').style.display = 'block';
+                let extraParam = currentSort === 'vote_average.desc' ? '&vote_count.gte=200' : '';
+                url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=id-ID&sort_by=${currentSort}${extraParam}&page=${currentPage}`;
+            } else {
+                document.getElementById('exploreTitle').innerText = `Hasil: ${searchQuery}`;
+                document.getElementById('sortSelect').style.display = 'none';
+                url = `${BASE_URL}/search/movie?api_key=${API_KEY}&language=id-ID&query=${encodeURIComponent(searchQuery)}&page=${currentPage}`;
+            }
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                totalPages = data.total_pages;
+                document.getElementById('currentPageText').innerText = currentPage;
+                
+                const grid = document.getElementById('exploreGrid');
+                grid.innerHTML = '';
+                data.results.forEach(movie => {
+                    if(movie.poster_path) {
+                        const div = document.createElement('div');
+                        div.className = 'grid-item';
+                        div.onclick = () => navigateTo('detail', { id: movie.id });
+                        div.innerHTML = `<img src="${IMG_URL + movie.poster_path}"><p>${movie.title}</p>`;
+                        grid.appendChild(div);
+                    }
+                });
+                showSection('exploreView');
+            } catch (err) { showSection('exploreView'); }
+        }
+
+        function changePage(direction) {
+            const newPage = currentPage + direction;
+            if (newPage >= 1 && newPage <= totalPages) {
+                navigateTo('explore', { mode: currentExploreMode, query: searchQuery, page: newPage });
+            }
+        }
+
+        // RIWAYAT (HISTORY)
+        function saveToHistory(movie) {
+            let history = JSON.parse(localStorage.getItem('dramaku_history')) || [];
+            history = history.filter(m => m.id !== movie.id); // hapus duplikat
+            history.unshift({ id: movie.id, title: movie.title, poster_path: movie.poster_path }); // taruh paling atas
+            if (history.length > 30) history.pop(); // Batas 30 film
+            localStorage.setItem('dramaku_history', JSON.stringify(history));
+        }
+
+        function loadHistory() {
+            showSection('globalLoader');
+            const history = JSON.parse(localStorage.getItem('dramaku_history')) || [];
+            const grid = document.getElementById('historyGrid');
+            grid.innerHTML = '';
+            
+            if(history.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">Belum ada riwayat tontonan.</p>';
+            } else {
+                history.forEach(movie => {
+                    const div = document.createElement('div');
+                    div.className = 'grid-item';
+                    div.onclick = () => navigateTo('detail', { id: movie.id });
+                    div.innerHTML = `<img src="${IMG_URL + movie.poster_path}"><p>${movie.title}</p>`;
+                    grid.appendChild(div);
+                });
+            }
+            showSection('historyView');
+        }
+
+        // DETAIL VIP
+        async function loadMovieDetail(tmdbId) {
+            showSection('globalLoader');
+            try {
+                const res = await fetch(`${BASE_URL}/movie/${tmdbId}?api_key=${API_KEY}&language=id-ID&append_to_response=videos`);
+                const movie = await res.json();
+                
+                activeMovieId = movie.id;
+                saveToHistory(movie); // Simpan otomatis ke riwayat pas dibuka
+
+                document.getElementById('detailView').style.backgroundImage = `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})`;
+                document.getElementById('detTitle').innerText = movie.title;
+                document.getElementById('detRating').innerText = `⭐ ${movie.vote_average.toFixed(1)}`;
+                document.getElementById('detYear').innerText = movie.release_date ? movie.release_date.substring(0,4) : '';
+                document.getElementById('detDesc').innerText = movie.overview || "Sinopsis tidak tersedia.";
+                document.getElementById('cardMovieImg').src = `${IMG_URL}${movie.poster_path}`;
+
+                const trailerCard = document.getElementById('trailerCard');
+                if (movie.videos && movie.videos.results.length > 0) {
+                    const trailer = movie.videos.results.find(v => v.site === 'YouTube');
+                    if (trailer) {
+                        activeTrailerKey = trailer.key;
+                        document.getElementById('cardTrailerImg').src = `https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg`;
+                        trailerCard.style.display = 'block';
+                    } else { trailerCard.style.display = 'none'; }
+                } else { trailerCard.style.display = 'none'; }
+
+                showSection('detailView');
+            } catch (err) {}
+        }
+
+        function goBack() { history.back(); }
+
+        // PEMUTAR VIDEO
+        let currentPlayType = 'movie';
+        function startPlayback(type) {
+            currentPlayType = type;
             const modal = document.getElementById('playerModal');
             const iframe = document.getElementById('videoIframe');
-            
-            // Tembakan maut ke server Vidsrc (Penyedia Video LK21)
-            iframe.src = `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`;
-            
-            // Tampilkan Layar Bioskopnya
+            const selector = document.getElementById('serverSelect');
             modal.style.display = 'flex';
+
+            if (type === 'trailer') {
+                selector.style.display = 'none';
+                iframe.src = `https://www.youtube.com/embed/${activeTrailerKey}?autoplay=1`;
+            } else {
+                selector.style.display = 'block';
+                selector.value = 'vidlink'; 
+                changeServer(); 
+            }
         }
 
-        // Matikan Bioskop
-        function closePlayer() {
-            const modal = document.getElementById('playerModal');
+        function changeServer() {
+            if (currentPlayType !== 'movie' || !activeMovieId) return;
+            const server = document.getElementById('serverSelect').value;
             const iframe = document.getElementById('videoIframe');
-            
-            modal.style.display = 'none';
-            iframe.src = ''; // Wajib dikosongin biar suara video gak bocor di background
+            iframe.src = server === 'vidlink' 
+                ? `https://vidlink.pro/movie/${activeMovieId}` 
+                : `https://vidsrc.me/embed/movie?tmdb=${activeMovieId}`;
         }
 
-        // Nyalakan mesin saat aplikasi dibuka
-        getMovies();
+        function closePlayer() {
+            document.getElementById('playerModal').style.display = 'none';
+            document.getElementById('videoIframe').src = '';
+        }
+
+        // INISIALISASI
+        initHome();
+        navigateTo('home', {}, false);
+        document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') executeSearch(); });
     </script>
 </body>
 </html>
