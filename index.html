@@ -2,88 +2,98 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dramaku App</title>
     <style>
         :root { --primary: #e50914; --bg: #0f0f0f; }
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg); color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; padding-bottom: 70px; /* Jarak buat Bottom Nav */ }
+        /* FIX ZOOM & Tap Delay */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        body { background-color: var(--bg); color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; padding-bottom: 60px; }
         
-        /* Navbar Atas */
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
+        /* Navbar */
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #222; }
         .navbar-brand { color: var(--primary); font-size: 24px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
         .search-container { display: flex; gap: 8px; flex: 1; justify-content: flex-end;}
         .search-box { padding: 8px 15px; border-radius: 20px; border: 1px solid #444; background: rgba(255,255,255,0.1); color: white; outline: none; width: 100%; max-width: 200px; }
         .search-btn { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
 
-        /* Tampilan Sections */
         .view-section { display: none; }
         
-        /* Animasi Loader (Pasti di Tengah) */
-        #globalLoader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; }
+        /* Loader */
+        #globalLoader { position: fixed; inset: 0; background: var(--bg); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; }
         .loader-logo { font-size: 2.5rem; font-weight: 900; color: var(--primary); letter-spacing: 5px; animation: pulse 0.8s infinite alternate; }
         @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.1); text-shadow: 0 0 20px rgba(229, 9, 20, 0.8); } }
 
         /* Hero Banner */
         .hero { height: 50vh; background-size: cover; background-position: center; position: relative; display: flex; align-items: flex-end; padding: 30px 20px; }
-        .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg) 5%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.7) 100%); }
+        .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg) 5%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.8) 100%); }
         .hero-content { position: relative; z-index: 5; width: 100%; }
         .hero-title { font-size: 2rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 5px #000; }
-        .hero-desc { font-size: 0.95rem; line-height: 1.4; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #ddd; }
-        .info-btn { background: rgba(255,255,255,0.2); color: white; border: 1px solid #fff; padding: 8px 20px; border-radius: 5px; font-weight: bold; backdrop-filter: blur(5px); }
+        .hero-desc { font-size: 0.95rem; line-height: 1.4; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #ddd; text-shadow: 1px 1px 3px #000;}
+        .info-btn { background: rgba(255,255,255,0.2); color: white; border: 1px solid #fff; padding: 8px 20px; border-radius: 5px; font-weight: bold; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
 
-        /* Slider */
+        /* Slider Poster */
         .row { padding: 15px 20px 5px 20px; }
-        .row h2 { font-size: 1.1rem; margin-bottom: 10px; color: #fff; font-weight: bold; }
+        .row h2 { font-size: 1.1rem; margin-bottom: 10px; color: #fff; font-weight: bold; border-left: 3px solid var(--primary); padding-left: 8px;}
         .row-posters { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 10px; }
         .row-posters::-webkit-scrollbar { display: none; }
-        .poster { width: 110px; flex-shrink: 0; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; } /* BUG FIX: UKURAN SERAGAM */
+        
+        .poster-card { width: 110px; flex-shrink: 0; cursor: pointer; }
+        .poster-box { width: 100%; padding-top: 150%; position: relative; border-radius: 8px; overflow: hidden; background: #222; box-shadow: 0 4px 8px rgba(0,0,0,0.5);}
+        .poster-box img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
 
-        /* Grid Umum (Jelajah & Riwayat) */
+        /* Grid & Pagination */
         .page-container { padding: 20px; min-height: 100vh; }
         .page-header { font-size: 1.5rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 20px; }
-        .sort-select { background: #222; color: white; border: 1px solid var(--primary); padding: 8px; border-radius: 5px; width: 100%; margin-bottom: 20px; outline: none; }
+        .sort-select { background: #222; color: white; border: 1px solid #444; padding: 10px; border-radius: 5px; width: 100%; outline: none; margin-bottom: 10px;}
         
-        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; } /* 3 Kolom buat HP */
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         @media (max-width: 400px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
-        .grid-item { width: 100%; }
-        .grid-item img { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); } /* BUG FIX: UKURAN SERAGAM */
-        .grid-item p { text-align: center; margin-top: 5px; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccc; }
+        .grid-item { width: 100%; display: flex; flex-direction: column; cursor: pointer;}
+        .grid-item p { text-align: center; margin-top: 8px; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccc; }
 
-        /* Pagination */
-        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
-        .page-btn { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; }
+        .pagination { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+        .page-num { padding: 8px 12px; background: #222; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; font-size: 0.9rem; border: 1px solid #333;}
+        .page-num.active { background: var(--primary); border-color: var(--primary); }
+        .page-btn { padding: 8px 15px; background: #111; border: 1px solid #444; border-radius: 5px; color: white; cursor: pointer; font-weight: bold;}
 
         /* Detail View */
         #detailView { min-height: 100vh; position: relative; background-size: cover; background-position: center; background-attachment: fixed; }
-        #detailView::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 1; }
-        .back-nav { position: relative; z-index: 10; padding: 15px 20px; font-size: 1.1rem; color: #aaa; }
-        .detail-content { position: relative; z-index: 10; padding: 10px 20px; }
-        .detail-title { font-size: 2rem; font-weight: 900; margin-bottom: 10px; }
+        
+        /* FIX BLUR: Layer ini cuma buat background gelap, content ada di atasnya */
+        #detailView::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); z-index: 1; }
+        
+        .back-nav { position: relative; z-index: 20; padding: 15px 20px; font-size: 1.1rem; color: #aaa; font-weight: bold; cursor: pointer;}
+        
+        /* FIX Z-INDEX: Pastikan konten detail di atas layer blur (z-index 1) */
+        .detail-content { position: relative; z-index: 20; padding: 0 20px 20px 20px; }
+        
+        .detail-title { font-size: 2rem; font-weight: 900; margin-bottom: 10px; line-height: 1.1;}
         .detail-meta { color: #aaa; font-size: 0.9rem; margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
         .rating-badge { background: var(--primary); color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
-        .detail-overview { font-size: 0.95rem; line-height: 1.5; color: #ccc; margin-bottom: 25px; }
+        .detail-overview { font-size: 0.95rem; line-height: 1.5; color: #eee; margin-bottom: 25px; }
         
-        /* Kartu Aksi Detail */
-        .action-posters { display: flex; gap: 15px; justify-content: center; }
-        .action-card { width: 140px; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; position: relative; border: 2px solid #333; }
+        .action-posters { display: flex; gap: 15px; justify-content: flex-start; margin-bottom: 20px;}
+        .action-card { width: 130px; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; position: relative; border: 2px solid transparent; box-shadow: 0 5px 15px rgba(0,0,0,0.8);}
         .action-card img { width: 100%; height: 100%; object-fit: cover; }
-        .action-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
-        .action-card .label { position: absolute; bottom: 15px; left: 0; width: 100%; text-align: center; font-size: 0.9rem; font-weight: bold; color: white; z-index: 2; }
-        .card-movie { border-color: var(--primary); }
+        .action-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent 60%); }
+        .action-card .label { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 0.85rem; font-weight: bold; color: white; z-index: 2; }
+        
+        /* FIX RELATED CATALOG: Dipaksa Z-Index tinggi biar bisa diklik & gak blur */
+        .related-section { position: relative; z-index: 20; padding-bottom: 80px; }
+        .related-section h2 { margin-left: 20px; color: white; font-weight: bold; font-size: 1.2rem; border-left: 3px solid var(--primary); padding-left: 10px; margin-bottom: 15px; }
 
         /* Modal Player */
-        #playerModal { display: none; position: fixed; inset: 0; background: #000; z-index: 2000; flex-direction: column; }
-        .player-header { padding: 15px; display: flex; justify-content: space-between; background: #111; }
-        .server-selector { background: #222; color: white; padding: 8px; border-radius: 5px; border: 1px solid var(--primary); }
+        #playerModal { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; }
+        .player-header { padding: 15px; display: flex; justify-content: space-between; background: #111; border-bottom: 1px solid var(--primary);}
+        .server-selector { background: #222; color: white; padding: 8px; border-radius: 5px; border: 1px solid #444; outline: none; font-weight: bold;}
         #playerModal iframe { width: 100%; flex: 1; border: none; }
-        .close-btn { font-size: 25px; color: #fff; line-height: 1; }
+        .close-btn { font-size: 25px; color: #fff; line-height: 1; font-weight: bold; cursor: pointer;}
 
-        /* BOTTOM NAVIGATION BAR (ANDROID STYLE) */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #777; font-size: 0.75rem; font-weight: bold; }
-        .nav-item.active { color: var(--primary); }
-        .nav-icon { font-size: 1.4rem; margin-bottom: 3px; }
+        /* Bottom Nav Modern */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10,10,10,0.98); border-top: 1px solid #222; display: flex; justify-content: space-around; z-index: 1000; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);}
+        .nav-item { flex: 1; text-align: center; padding: 18px 0; font-size: 0.8rem; font-weight: 800; color: #666; letter-spacing: 1px; transition: 0.3s; border-top: 3px solid transparent; cursor: pointer;}
+        .nav-item.active { color: white; border-top: 3px solid var(--primary); background: linear-gradient(to top, rgba(229,9,20,0.1), transparent); }
     </style>
 </head>
 <body>
@@ -91,7 +101,7 @@
     <div class="navbar" id="topNavbar">
         <div class="navbar-brand">DRAMAKU</div>
         <div class="search-container">
-            <input type="text" id="searchInput" class="search-box" placeholder="Cari judul...">
+            <input type="text" id="searchInput" class="search-box" placeholder="Cari film...">
             <button class="search-btn" onclick="executeSearch()">Cari</button>
         </div>
     </div>
@@ -105,7 +115,7 @@
             <div class="hero-content">
                 <h1 class="hero-title" id="heroTitle">Memuat...</h1>
                 <p class="hero-desc" id="heroDesc">Menyinkronkan...</p>
-                <button class="info-btn" id="heroPlayBtn">Selengkapnya</button>
+                <button class="info-btn" id="heroPlayBtn">Lihat Detail</button>
             </div>
         </div>
         <div class="row"><h2>Sedang Trending</h2><div class="row-posters" id="row-trending"></div></div>
@@ -121,12 +131,10 @@
             <option value="vote_average.desc">Rating Tertinggi</option>
             <option value="primary_release_date.desc">Terbaru Dirilis</option>
         </select>
+        
+        <div class="pagination" id="paginationTop"></div>
         <div class="grid-container" id="exploreGrid"></div>
-        <div class="pagination" id="paginationControls">
-            <button class="page-btn" onclick="changePage(-1)">Kembali</button>
-            <span style="font-weight:bold; color:#aaa;">Hal <span id="currentPageText">1</span></span>
-            <button class="page-btn" onclick="changePage(1)">Lanjut</button>
-        </div>
+        <div class="pagination" id="paginationBottom"></div>
     </div>
 
     <div id="historyView" class="view-section page-container">
@@ -135,33 +143,40 @@
     </div>
 
     <div id="detailView" class="view-section">
-        <div class="back-nav" onclick="goBack()">❮ Kembali</div>
+        <div class="back-nav" onclick="goBack()">❮ KEMBALI</div>
+        
         <div class="detail-content">
             <h1 class="detail-title" id="detTitle">Memuat...</h1>
             <div class="detail-meta">
                 <span class="rating-badge" id="detRating">0.0</span>
                 <span id="detYear">N/A</span>
             </div>
-            <p class="detail-overview" id="detDesc">Menarik sinopsis...</p>
             
             <div class="action-posters">
                 <div class="action-card card-movie" onclick="startPlayback('movie')">
                     <img id="cardMovieImg" src="">
-                    <div class="label">FULL MOVIE</div>
+                    <div class="label">▶ FULL MOVIE</div>
                 </div>
                 <div class="action-card card-trailer" id="trailerCard" onclick="startPlayback('trailer')">
                     <img id="cardTrailerImg" src="">
-                    <div class="label">TRAILER</div>
+                    <div class="label">🎬 TRAILER</div>
                 </div>
             </div>
+
+            <p class="detail-overview" id="detDesc">Menarik sinopsis...</p>
+        </div>
+        
+        <div class="related-section">
+            <h2>Rekomendasi Serupa</h2>
+            <div class="row-posters" id="row-related"></div>
         </div>
     </div>
 
     <div id="playerModal">
         <div class="player-header">
             <select class="server-selector" id="serverSelect" onchange="changeServer()">
-                <option value="vidlink">VidLink (Auto Sub Indo)</option>
-                <option value="vidsrc">VidSrc</option>
+                <option value="vidlink">Server 1 (Auto Sub)</option>
+                <option value="vidsrc">Server 2 (Cadangan)</option>
             </select>
             <span class="close-btn" onclick="closePlayer()">✖</span>
         </div>
@@ -169,18 +184,9 @@
     </div>
 
     <div class="bottom-nav" id="bottomNav">
-        <div class="nav-item active" id="nav-home" onclick="navigateTo('home')">
-            <div class="nav-icon">🏠</div>
-            <span>Beranda</span>
-        </div>
-        <div class="nav-item" id="nav-explore" onclick="navigateTo('explore', {mode: 'popular'})">
-            <div class="nav-icon">🔍</div>
-            <span>Jelajah</span>
-        </div>
-        <div class="nav-item" id="nav-history" onclick="navigateTo('history')">
-            <div class="nav-icon">🕒</div>
-            <span>Riwayat</span>
-        </div>
+        <div class="nav-item active" id="nav-home" onclick="navigateTo('home')">BERANDA</div>
+        <div class="nav-item" id="nav-explore" onclick="navigateTo('explore', {mode: 'popular'})">JELAJAH</div>
+        <div class="nav-item" id="nav-history" onclick="navigateTo('history')">RIWAYAT</div>
     </div>
 
     <script>
@@ -196,22 +202,17 @@
         let activeMovieId = null;
         let activeTrailerKey = null;
 
-        // TAMPILAN & NAVIGASI
         function showSection(sectionId) {
             document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
-            const target = document.getElementById(sectionId);
-            target.style.display = (sectionId === 'globalLoader') ? 'flex' : 'block';
-            
-            // Atur tampilan Navbar Atas & Bottom Nav
+            document.getElementById(sectionId).style.display = (sectionId === 'globalLoader') ? 'flex' : 'block';
             document.getElementById('topNavbar').style.display = (sectionId === 'detailView' || sectionId === 'globalLoader') ? 'none' : 'flex';
             document.getElementById('bottomNav').style.display = (sectionId === 'detailView' || sectionId === 'globalLoader') ? 'none' : 'flex';
-            
             if(sectionId !== 'globalLoader') window.scrollTo(0, 0);
         }
 
         function updateBottomNav(page) {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            if(page === 'home' || page === 'explore' || page === 'history') {
+            if(['home', 'explore', 'history'].includes(page)) {
                 document.getElementById('nav-' + page).classList.add('active');
             }
         }
@@ -219,25 +220,35 @@
         function navigateTo(page, params = {}, pushState = true) {
             if (pushState) history.pushState({ page, params }, '', `#${page}`);
             updateBottomNav(page);
-
-            if (page === 'home') {
-                showSection('homeView');
-            } else if (page === 'explore') {
-                openExplore(params.mode || 'popular', params.page || 1, params.query || '');
-            } else if (page === 'history') {
-                loadHistory();
-            } else if (page === 'detail') {
-                loadMovieDetail(params.id);
-            }
+            if (page === 'home') showSection('homeView');
+            else if (page === 'explore') openExplore(params.mode || 'popular', params.page || 1, params.query || '');
+            else if (page === 'history') loadHistory();
+            else if (page === 'detail') loadMovieDetail(params.id);
         }
 
+        // LOGIKA TOMBOL BACK HP (Player -> Detail -> Home)
         window.addEventListener('popstate', function(e) {
-            closePlayer();
+            // Cek apakah player lagi kebuka?
+            if (document.getElementById('playerModal').style.display === 'flex') {
+                closePlayer(); // Tutup player doang, jangan pindah halaman
+                // Kita "paksa" stay di history state yang sama biar gak lompat
+                // Tapi karena popstate udah kejadian, kita biarin aja dia kembali ke state sebelumnya (Detail)
+                return;
+            }
+
             if (e.state && e.state.page) navigateTo(e.state.page, e.state.params, false);
             else navigateTo('home', {}, false);
         });
 
-        // BERANDA
+        function createPosterHTML(movie) {
+            return `
+                <div class="poster-box">
+                    <img src="${IMG_URL + movie.poster_path}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x450?text=No+Poster'">
+                </div>
+                <p>${movie.title}</p>
+            `;
+        }
+
         async function initHome() {
             try {
                 const resHero = await fetch(`${BASE_URL}/trending/movie/week?api_key=${API_KEY}&language=id-ID`);
@@ -262,16 +273,15 @@
             row.innerHTML = '';
             data.results.forEach(movie => {
                 if(movie.poster_path) {
-                    const img = document.createElement('img');
-                    img.src = IMG_URL + movie.poster_path;
-                    img.className = 'poster';
-                    img.onclick = () => navigateTo('detail', { id: movie.id });
-                    row.appendChild(img);
+                    const div = document.createElement('div');
+                    div.className = 'poster-card';
+                    div.onclick = () => navigateTo('detail', { id: movie.id });
+                    div.innerHTML = createPosterHTML(movie);
+                    row.appendChild(div);
                 }
             });
         }
 
-        // PENCARIAN & JELAJAH
         function executeSearch() {
             const query = document.getElementById('searchInput').value.trim();
             if(!query) return;
@@ -304,9 +314,10 @@
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                totalPages = data.total_pages;
-                document.getElementById('currentPageText').innerText = currentPage;
+                totalPages = Math.min(data.total_pages, 500); 
                 
+                renderPagination();
+
                 const grid = document.getElementById('exploreGrid');
                 grid.innerHTML = '';
                 data.results.forEach(movie => {
@@ -314,7 +325,7 @@
                         const div = document.createElement('div');
                         div.className = 'grid-item';
                         div.onclick = () => navigateTo('detail', { id: movie.id });
-                        div.innerHTML = `<img src="${IMG_URL + movie.poster_path}"><p>${movie.title}</p>`;
+                        div.innerHTML = createPosterHTML(movie);
                         grid.appendChild(div);
                     }
                 });
@@ -322,19 +333,52 @@
             } catch (err) { showSection('exploreView'); }
         }
 
-        function changePage(direction) {
-            const newPage = currentPage + direction;
-            if (newPage >= 1 && newPage <= totalPages) {
-                navigateTo('explore', { mode: currentExploreMode, query: searchQuery, page: newPage });
+        function renderPagination() {
+            if (totalPages <= 1) {
+                document.getElementById('paginationTop').innerHTML = '';
+                document.getElementById('paginationBottom').innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            if (currentPage > 1) html += `<button class="page-btn" onclick="changePage(-1)">❮</button>`;
+            
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+
+            if (startPage > 1) {
+                html += `<div class="page-num" onclick="goToPage(1)">1</div>`;
+                if (startPage > 2) html += `<span style="color:#666; font-weight:bold;">...</span>`;
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === currentPage) html += `<div class="page-num active">${i}</div>`;
+                else html += `<div class="page-num" onclick="goToPage(${i})">${i}</div>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += `<span style="color:#666; font-weight:bold;">...</span>`;
+                html += `<div class="page-num" onclick="goToPage(${totalPages})">${totalPages}</div>`;
+            }
+
+            if (currentPage < totalPages) html += `<button class="page-btn" onclick="changePage(1)">❯</button>`;
+
+            document.getElementById('paginationTop').innerHTML = html;
+            document.getElementById('paginationBottom').innerHTML = html;
+        }
+
+        function changePage(direction) { goToPage(currentPage + direction); }
+        function goToPage(page) {
+            if (page >= 1 && page <= totalPages && page !== currentPage) {
+                navigateTo('explore', { mode: currentExploreMode, query: searchQuery, page: page });
             }
         }
 
-        // RIWAYAT (HISTORY)
         function saveToHistory(movie) {
             let history = JSON.parse(localStorage.getItem('dramaku_history')) || [];
-            history = history.filter(m => m.id !== movie.id); // hapus duplikat
-            history.unshift({ id: movie.id, title: movie.title, poster_path: movie.poster_path }); // taruh paling atas
-            if (history.length > 30) history.pop(); // Batas 30 film
+            history = history.filter(m => m.id !== movie.id);
+            history.unshift({ id: movie.id, title: movie.title, poster_path: movie.poster_path });
+            if (history.length > 30) history.pop();
             localStorage.setItem('dramaku_history', JSON.stringify(history));
         }
 
@@ -351,33 +395,42 @@
                     const div = document.createElement('div');
                     div.className = 'grid-item';
                     div.onclick = () => navigateTo('detail', { id: movie.id });
-                    div.innerHTML = `<img src="${IMG_URL + movie.poster_path}"><p>${movie.title}</p>`;
+                    div.innerHTML = createPosterHTML(movie);
                     grid.appendChild(div);
                 });
             }
             showSection('historyView');
         }
 
-        // DETAIL VIP
         async function loadMovieDetail(tmdbId) {
             showSection('globalLoader');
             try {
-                const res = await fetch(`${BASE_URL}/movie/${tmdbId}?api_key=${API_KEY}&language=id-ID&append_to_response=videos`);
-                const movie = await res.json();
+                let res = await fetch(`${BASE_URL}/movie/${tmdbId}?api_key=${API_KEY}&language=id-ID`);
+                let movie = await res.json();
+                
+                if (!movie.overview || movie.overview.trim() === '') {
+                    let resEn = await fetch(`${BASE_URL}/movie/${tmdbId}?api_key=${API_KEY}&language=en-US`);
+                    let movieEn = await resEn.json();
+                    movie.overview = movieEn.overview || "Sinopsis tidak tersedia.";
+                }
                 
                 activeMovieId = movie.id;
-                saveToHistory(movie); // Simpan otomatis ke riwayat pas dibuka
+                saveToHistory(movie);
 
                 document.getElementById('detailView').style.backgroundImage = `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})`;
                 document.getElementById('detTitle').innerText = movie.title;
                 document.getElementById('detRating').innerText = `⭐ ${movie.vote_average.toFixed(1)}`;
                 document.getElementById('detYear').innerText = movie.release_date ? movie.release_date.substring(0,4) : '';
-                document.getElementById('detDesc').innerText = movie.overview || "Sinopsis tidak tersedia.";
+                document.getElementById('detDesc').innerText = movie.overview;
                 document.getElementById('cardMovieImg').src = `${IMG_URL}${movie.poster_path}`;
 
+                let resVid = await fetch(`${BASE_URL}/movie/${tmdbId}/videos?api_key=${API_KEY}`);
+                let vidData = await resVid.json();
+                
+                activeTrailerKey = null;
                 const trailerCard = document.getElementById('trailerCard');
-                if (movie.videos && movie.videos.results.length > 0) {
-                    const trailer = movie.videos.results.find(v => v.site === 'YouTube');
+                if (vidData.results && vidData.results.length > 0) {
+                    let trailer = vidData.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || vidData.results.find(v => v.site === 'YouTube');
                     if (trailer) {
                         activeTrailerKey = trailer.key;
                         document.getElementById('cardTrailerImg').src = `https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg`;
@@ -385,20 +438,30 @@
                     } else { trailerCard.style.display = 'none'; }
                 } else { trailerCard.style.display = 'none'; }
 
+                // REKOMENDASI SERUPA
+                fetchRow(`${BASE_URL}/movie/${tmdbId}/similar?api_key=${API_KEY}&language=id-ID`, 'row-related');
+
                 showSection('detailView');
             } catch (err) {}
         }
 
         function goBack() { history.back(); }
 
-        // PEMUTAR VIDEO
         let currentPlayType = 'movie';
         function startPlayback(type) {
+            // TRIK TOMBOL BACK HP: Push "fake state" biar kalau di-back, player nutup bukan keluar app
+            history.pushState({ page: 'player' }, '', '#player');
+            
             currentPlayType = type;
             const modal = document.getElementById('playerModal');
             const iframe = document.getElementById('videoIframe');
             const selector = document.getElementById('serverSelect');
+            
             modal.style.display = 'flex';
+            
+            // AUTO LANDSCAPE / FULLSCREEN REQUEST
+            if (modal.requestFullscreen) modal.requestFullscreen();
+            else if (modal.webkitRequestFullscreen) modal.webkitRequestFullscreen();
 
             if (type === 'trailer') {
                 selector.style.display = 'none';
@@ -422,9 +485,10 @@
         function closePlayer() {
             document.getElementById('playerModal').style.display = 'none';
             document.getElementById('videoIframe').src = '';
+            // Keluar dari Fullscreen kalau masih aktif
+            if (document.exitFullscreen) document.exitFullscreen();
         }
 
-        // INISIALISASI
         initHome();
         navigateTo('home', {}, false);
         document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') executeSearch(); });
