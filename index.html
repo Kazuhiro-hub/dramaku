@@ -6,29 +6,34 @@
     <title>Dramaku App</title>
     <style>
         :root { --primary: #e50914; --bg: #0f0f0f; }
+        
+        /* FIX ZOOM & Kerapian Standar */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         body { background-color: var(--bg); color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; padding-bottom: 60px; }
         
+        /* Navbar Atas */
         .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.95); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #222; }
-        .navbar-brand { color: var(--primary); font-size: 24px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
+        .navbar-brand { color: var(--primary); font-size: 24px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; }
         .search-container { display: flex; gap: 8px; flex: 1; justify-content: flex-end;}
         .search-box { padding: 8px 15px; border-radius: 20px; border: 1px solid #444; background: rgba(255,255,255,0.1); color: white; outline: none; width: 100%; max-width: 200px; }
-        .search-btn { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
+        .search-btn { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; }
 
         .view-section { display: none; }
         
-        /* Loader Utama Layar Penuh */
+        /* Loader Layar Penuh */
         #globalLoader { position: fixed; inset: 0; background: var(--bg); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; }
         .loader-logo { font-size: 2.5rem; font-weight: 900; color: var(--primary); letter-spacing: 5px; animation: pulse 0.8s infinite alternate; }
         @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.1); text-shadow: 0 0 20px rgba(229, 9, 20, 0.8); } }
 
-        .hero { height: 50vh; background-size: cover; background-position: center; position: relative; display: flex; align-items: flex-end; padding: 30px 20px; transition: 0.5s;}
+        /* Hero Banner (Beranda) */
+        .hero { height: 50vh; background-size: cover; background-position: center; position: relative; display: flex; align-items: flex-end; padding: 30px 20px; transition: background-image 0.5s ease-in-out;}
         .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg) 5%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.8) 100%); }
         .hero-content { position: relative; z-index: 5; width: 100%; }
         .hero-title { font-size: 2rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 5px #000; }
         .hero-desc { font-size: 0.95rem; line-height: 1.4; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #ddd; text-shadow: 1px 1px 3px #000;}
-        .info-btn { background: rgba(255,255,255,0.2); color: white; border: 1px solid #fff; padding: 8px 20px; border-radius: 5px; font-weight: bold; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+        .info-btn { background: rgba(255,255,255,0.2); color: white; border: 1px solid #fff; padding: 8px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
 
+        /* Slider Film */
         .row { padding: 15px 20px 5px 20px; }
         .row h2 { font-size: 1.1rem; margin-bottom: 10px; color: #fff; font-weight: bold; border-left: 3px solid var(--primary); padding-left: 8px;}
         .row-posters { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 10px; }
@@ -36,7 +41,7 @@
         
         .poster-card { width: 110px; flex-shrink: 0; cursor: pointer; }
         
-        /* 🔥 EFEK SKELETON LOADING (Animasi Kilap pas gambar belum dimuat) */
+        /* 🔥 EFEK SKELETON LOADING 🔥 */
         .poster-box { 
             width: 100%; padding-top: 150%; position: relative; border-radius: 8px; overflow: hidden; 
             background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
@@ -46,10 +51,10 @@
         }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         
-        /* Gambar Transisi Mulus */
         .poster-box img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.5s ease-in-out; }
-        .poster-box img.loaded { opacity: 1; } /* Muncul pas loading selesai */
+        .poster-box img.loaded { opacity: 1; }
 
+        /* Grid Layout (Jelajah & Riwayat) */
         .page-container { padding: 20px; min-height: 100vh; }
         .page-header { font-size: 1.5rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 20px; }
         .sort-select { background: #222; color: white; border: 1px solid #444; padding: 10px; border-radius: 5px; width: 100%; outline: none; margin-bottom: 10px;}
@@ -59,13 +64,14 @@
         .grid-item { width: 100%; display: flex; flex-direction: column; cursor: pointer;}
         .grid-item p { text-align: center; margin-top: 8px; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccc; }
 
+        /* Pagination Ala Google */
         .pagination { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
         .page-num { padding: 8px 12px; background: #222; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; font-size: 0.9rem; border: 1px solid #333;}
         .page-num.active { background: var(--primary); border-color: var(--primary); }
         .page-btn { padding: 8px 15px; background: #111; border: 1px solid #444; border-radius: 5px; color: white; cursor: pointer; font-weight: bold;}
 
-        /* Detail View */
-        #detailView { min-height: 100vh; position: relative; background-size: cover; background-position: center; background-attachment: fixed; transition: 0.5s;}
+        /* Detail View VIP */
+        #detailView { min-height: 100vh; position: relative; background-size: cover; background-position: center; background-attachment: fixed; transition: background-image 0.5s ease-in-out;}
         #detailView::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); z-index: 1; }
         .back-nav { position: relative; z-index: 20; padding: 15px 20px; font-size: 1.1rem; color: #aaa; font-weight: bold; cursor: pointer;}
         .detail-content { position: relative; z-index: 20; padding: 0 20px 20px 20px; }
@@ -75,24 +81,28 @@
         .rating-badge { background: var(--primary); color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
         .detail-overview { font-size: 0.95rem; line-height: 1.5; color: #eee; margin-bottom: 25px; }
         
+        /* 2 Poster Interaktif */
         .action-posters { display: flex; gap: 15px; justify-content: flex-start; margin-bottom: 20px;}
-        .action-card { width: 130px; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; position: relative; border: 2px solid transparent; box-shadow: 0 5px 15px rgba(0,0,0,0.8);}
-        .action-card img { width: 100%; height: 100%; object-fit: cover; }
+        .action-card { width: 130px; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; position: relative; border: 2px solid transparent; box-shadow: 0 5px 15px rgba(0,0,0,0.8); cursor: pointer;}
+        .action-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.5s ease-in-out;}
+        .action-card img.loaded { opacity: 1; }
         .action-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent 60%); }
         .action-card .label { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 0.85rem; font-weight: bold; color: white; z-index: 2; }
         .card-movie { border-color: var(--primary); }
         .card-trailer { border-color: #555; }
         
+        /* Katalog Rekomendasi (Z-Index di Atas Blur) */
         .related-section { position: relative; z-index: 20; padding-bottom: 80px; }
         .related-section h2 { margin-left: 20px; color: white; font-weight: bold; font-size: 1.2rem; border-left: 3px solid var(--primary); padding-left: 10px; margin-bottom: 15px; }
 
-        /* Modal Player */
+        /* Modal Player (Sandbox Sudah Dicabut) */
         #playerModal { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; }
         .player-header { padding: 15px; display: flex; justify-content: space-between; background: #111; border-bottom: 1px solid var(--primary);}
         .server-selector { background: #222; color: white; padding: 8px; border-radius: 5px; border: 1px solid #444; outline: none; font-weight: bold;}
         #playerModal iframe { width: 100%; flex: 1; border: none; }
         .close-btn { font-size: 25px; color: #fff; line-height: 1; font-weight: bold; cursor: pointer;}
 
+        /* Bottom Navigation Modern */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10,10,10,0.98); border-top: 1px solid #222; display: flex; justify-content: space-around; z-index: 1000; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);}
         .nav-item { flex: 1; text-align: center; padding: 18px 0; font-size: 0.8rem; font-weight: 800; color: #666; letter-spacing: 1px; transition: 0.3s; border-top: 3px solid transparent; cursor: pointer;}
         .nav-item.active { color: white; border-top: 3px solid var(--primary); background: linear-gradient(to top, rgba(229,9,20,0.1), transparent); }
@@ -101,7 +111,7 @@
 <body>
 
     <div class="navbar" id="topNavbar">
-        <div class="navbar-brand">DRAMAKU</div>
+        <div class="navbar-brand" onclick="navigateTo('home')">DRAMAKU</div>
         <div class="search-container">
             <input type="text" id="searchInput" class="search-box" placeholder="Cari film...">
             <button class="search-btn" onclick="executeSearch()">Cari</button>
@@ -153,11 +163,11 @@
             </div>
             <div class="action-posters">
                 <div class="action-card card-movie" onclick="startPlayback('movie')">
-                    <img id="cardMovieImg" src="" onload="this.classList.add('loaded')">
+                    <img id="cardMovieImg" src="" onload="this.classList.add('loaded')" onerror="this.src='https://via.placeholder.com/300x450?text=No+Poster'; this.classList.add('loaded');">
                     <div class="label">▶ FULL MOVIE</div>
                 </div>
                 <div class="action-card card-trailer" id="trailerCard" onclick="startPlayback('trailer')">
-                    <img id="cardTrailerImg" src="" onload="this.classList.add('loaded')">
+                    <img id="cardTrailerImg" src="" onload="this.classList.add('loaded')" onerror="this.src='https://via.placeholder.com/300x450?text=No+Poster'; this.classList.add('loaded');">
                     <div class="label">🎬 TRAILER</div>
                 </div>
             </div>
@@ -177,7 +187,7 @@
             </select>
             <span class="close-btn" onclick="closePlayer()">✖</span>
         </div>
-        <iframe id="videoIframe" src="" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"></iframe>
+        <iframe id="videoIframe" src="" allowfullscreen></iframe>
     </div>
 
     <div class="bottom-nav" id="bottomNav">
@@ -223,26 +233,21 @@
             else if (page === 'detail') loadMovieDetail(params.id);
         }
 
-        // 🔥 LOGIKA BACK BUTTON ANTI-NYASAR 🔥
+        // LOGIKA BACK BUTTON ANTI-NYASAR
         window.addEventListener('popstate', function(e) {
-            // 1. Kalau Player lagi kebuka, paksa tutup player dan KUNCI user di halaman Detail
             if (document.getElementById('playerModal').style.display === 'flex') {
                 closePlayer();
                 history.replaceState({ page: 'detail', id: activeMovieId }, '', '#detail');
                 return;
             }
-            
-            // 2. Kalau iklan hitbox diem-diem ngerusak history, paksa stay di Detail
             if (!e.state && document.getElementById('detailView').style.display === 'block') {
                 history.replaceState({ page: 'detail', id: activeMovieId }, '', '#detail');
                 return;
             }
-
             if (e.state && e.state.page) navigateTo(e.state.page, e.state.params, false);
             else navigateTo('home', {}, false);
         });
 
-        // 🔥 POSTER SKELETON LOADER 🔥
         function createPosterHTML(movie) {
             return `
                 <div class="poster-box">
@@ -260,7 +265,6 @@
                 const dataHero = await resHero.json();
                 const heroMovie = dataHero.results[0];
                 
-                // Pasang background hero pakai teknik load image biar halus
                 const heroImg = new Image();
                 heroImg.src = `https://image.tmdb.org/t/p/original${heroMovie.backdrop_path}`;
                 heroImg.onload = () => {
@@ -318,7 +322,7 @@
                 let extraParam = currentSort === 'vote_average.desc' ? '&vote_count.gte=200' : '';
                 url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=id-ID&sort_by=${currentSort}${extraParam}&page=${currentPage}`;
             } else {
-                document.getElementById('exploreTitle').innerText = `Hasil: ${searchQuery}`;
+                document.getElementById('exploreTitle').innerText = `Hasil: "${searchQuery}"`;
                 document.getElementById('sortSelect').style.display = 'none';
                 url = `${BASE_URL}/search/movie?api_key=${API_KEY}&language=id-ID&query=${encodeURIComponent(searchQuery)}&page=${currentPage}`;
             }
@@ -429,7 +433,6 @@
                 activeMovieId = movie.id;
                 saveToHistory(movie);
 
-                // Load background halus
                 const bgImg = new Image();
                 bgImg.src = `https://image.tmdb.org/t/p/original${movie.backdrop_path}`;
                 bgImg.onload = () => { document.getElementById('detailView').style.backgroundImage = `url(${bgImg.src})`; };
@@ -438,7 +441,9 @@
                 document.getElementById('detRating').innerText = `⭐ ${movie.vote_average.toFixed(1)}`;
                 document.getElementById('detYear').innerText = movie.release_date ? movie.release_date.substring(0,4) : '';
                 document.getElementById('detDesc').innerText = movie.overview;
-                document.getElementById('cardMovieImg').src = `${IMG_URL}${movie.poster_path}`;
+                
+                const coverImg = document.getElementById('cardMovieImg');
+                coverImg.src = `${IMG_URL}${movie.poster_path}`;
 
                 let resVid = await fetch(`${BASE_URL}/movie/${tmdbId}/videos?api_key=${API_KEY}`);
                 let vidData = await resVid.json();
@@ -449,7 +454,8 @@
                     let trailer = vidData.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || vidData.results.find(v => v.site === 'YouTube');
                     if (trailer) {
                         activeTrailerKey = trailer.key;
-                        document.getElementById('cardTrailerImg').src = `https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg`;
+                        const tImg = document.getElementById('cardTrailerImg');
+                        tImg.src = `https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg`;
                         trailerCard.style.display = 'block';
                     } else { trailerCard.style.display = 'none'; }
                 } else { trailerCard.style.display = 'none'; }
@@ -481,7 +487,7 @@
                 iframe.src = `https://www.youtube.com/embed/${activeTrailerKey}?autoplay=1`;
             } else {
                 selector.style.display = 'block';
-                selector.value = 'vidsrc'; // 🔥 DEFAULT SERVER 2 🔥
+                selector.value = 'vidsrc';
                 changeServer(); 
             }
         }
