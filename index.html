@@ -182,8 +182,9 @@
     <div id="playerModal">
         <div class="player-header">
             <select class="server-selector" id="serverSelect" onchange="changeServer()">
-                <option value="vidsrc">Server 1 (Prioritas)</option>
-                <option value="vidlink">Server 2 (Cadangan)</option>
+                <option value="vidsrc">Server Utama (VidSrc)</option>
+                <option value="embedsu">Server Alternatif 1 (EmbedSU)</option>
+                <option value="vidsrcpro">Server Alternatif 2 (VidSrc Pro)</option>
             </select>
             <span class="close-btn" onclick="closePlayer()">✖</span>
         </div>
@@ -496,9 +497,15 @@
             if (currentPlayType !== 'movie' || !activeMovieId) return;
             const server = document.getElementById('serverSelect').value;
             const iframe = document.getElementById('videoIframe');
-            iframe.src = server === 'vidlink' 
-                ? `https://vidlink.pro/movie/${activeMovieId}` 
-                : `https://vidsrc.me/embed/movie?tmdb=${activeMovieId}`;
+            
+            // 🔥 KITA PECAT VIDLINK, MASUKAN SERVER BARU YANG LEBIH TANGGUH 🔥
+            if (server === 'vidsrc') {
+                iframe.src = `https://vidsrc.me/embed/movie?tmdb=${activeMovieId}`;
+            } else if (server === 'embedsu') {
+                iframe.src = `https://embed.su/embed/movie/${activeMovieId}`;
+            } else if (server === 'vidsrcpro') {
+                iframe.src = `https://vidsrc.pro/embed/movie/${activeMovieId}`;
+            }
         }
 
         function closePlayer() {
@@ -513,3 +520,4 @@
     </script>
 </body>
 </html>
+
