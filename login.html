@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Dramaku</title>
+    <style>
+        :root { --primary:#e50914; --bg:#0f0f0f; }
+        * { box-sizing:border-box; }
+        body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:radial-gradient(circle at top,#261010,var(--bg) 55%); color:#fff; font-family:Arial,Helvetica,sans-serif; }
+        .card { width:100%; max-width:390px; padding:30px; background:#171717; border:1px solid #292929; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+        .logo { color:var(--primary); text-align:center; font-size:32px; font-weight:900; letter-spacing:4px; margin-bottom:8px; }
+        .subtitle { text-align:center; color:#888; margin-bottom:25px; }
+        label { display:block; margin:14px 0 7px; color:#ccc; font-size:14px; }
+        input { width:100%; padding:13px 14px; border:1px solid #3a3a3a; border-radius:8px; background:#0d0d0d; color:#fff; outline:none; }
+        input:focus { border-color:var(--primary); }
+        button { width:100%; margin-top:20px; padding:13px; border:0; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; }
+        button:disabled { opacity:.6; cursor:not-allowed; }
+        .switch { margin-top:18px; text-align:center; color:#888; font-size:14px; }
+        .switch a { color:#fff; cursor:pointer; text-decoration:underline; }
+        .message { min-height:20px; margin-top:15px; text-align:center; font-size:14px; color:#ff8585; }
+        .hidden { display:none; }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <div class="logo">DRAMAKU</div>
+        <div class="subtitle" id="subtitle">Masuk untuk melanjutkan</div>
+
+        <form id="authForm">
+            <div id="nameField" class="hidden">
+                <label for="name">Nama</label>
+                <input id="name" type="text" autocomplete="name" placeholder="Nama kamu">
+            </div>
+
+            <label for="email">Email</label>
+            <input id="email" type="email" autocomplete="email" placeholder="nama@email.com" required>
+
+            <label for="password">Password</label>
+            <input id="password" type="password" autocomplete="current-password" placeholder="Minimal 6 karakter" required>
+
+            <button id="submitBtn" type="submit">Masuk</button>
+        </form>
+
+        <div class="switch">
+            <span id="switchText">Belum punya akun?</span>
+            <a id="switchMode">Daftar</a>
+        </div>
+        <div id="message" class="message"></div>
+    </main>
+
+    <script type="module">
+        import { login, register, watchAuth } from "./auth.js";
+
+        const form = document.getElementById("authForm");
+        const nameField = document.getElementById("nameField");
+        const nameInput = document.getElementById("name");
+        const emailInput = document.getElementById("email");
+        const passwordInput = document.getElementById("password");
+        const submitBtn = document.getElementById("submitBtn");
+        const switchMode = document.getElementById("switchMode");
+        const switchText = document.getElementById("switchText");
+        const subtitle = document.getElementById("subtitle");
+        const message = document.getElementById("message");
+
+        let registerMode = false;
+
+        const errors = {
+            "auth/invalid-credential": "Email atau password salah.",
+            "auth/email-already-in-use": "Email tersebut sudah terdaftar.",
+            "auth/invalid-email": "Format email tidak valid.",
+            "auth/weak-password": "Password terlalu lemah. Gunakan minimal 6 karakter.",
+            "auth/too-many-requests": "Terlalu banyak percobaan. Coba lagi nanti.",
+            "auth/network-request-failed": "Koneksi internet bermasalah."
+        };
+
+        watchAuth(user => {
+            if (user) window.location.replace("index.html");
+        });
+
+        switchMode.addEventListener("click", () => {
+            registerMode = !registerMode;
+            nameField.classList.toggle("hidden", !registerMode);
+            passwordInput.autocomplete = registerMode ? "new-password" : "current-password";
+            submitBtn.textContent = registerMode ? "Daftar" : "Masuk";
+            switchText.textContent = registerMode ? "Sudah punya akun?" : "Belum punya akun?";
+            switchMode.textContent = registerMode ? "Masuk" : "Daftar";
+            subtitle.textContent = registerMode ? "Buat akun Dramaku" : "Masuk untuk melanjutkan";
+            message.textContent = "";
+        });
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+            message.textContent = "";
+            submitBtn.disabled = true;
+
+            try {
+                if (registerMode) {
+                    await register(emailInput.value.trim(), passwordInput.value, nameInput.value);
+                } else {
+                    await login(emailInput.value.trim(), passwordInput.value);
+                }
+                window.location.replace("index.html");
+            } catch (error) {
+                message.textContent = errors[error.code] || "Terjadi kesalahan. Silakan coba lagi.";
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
