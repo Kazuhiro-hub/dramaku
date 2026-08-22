@@ -198,13 +198,18 @@
     </div>
 
     <script>
-        const API_KEY = '5c9e36288ce1ccb6f161f613f06b190e';
-        const BASE_URL = 'https://api.themoviedb.org/3';
         const IMG_URL = 'https://image.tmdb.org/t/p/w500';
+        const TMDB_PROXY = '/api/tmdb';
 
         let currentExploreMode = 'popular'; 
         let currentSort = 'popularity.desc';
         let searchQuery = '';
+
+        async function tmdbFetch(path, query = '') {
+            const url = `${TMDB_PROXY}/${path}${query ? `?${query}` : ''}`;
+            const res = await fetch(url);
+            return res.json();
+        }
         let currentPage = 1;
         let totalPages = 1;
         let activeMovieId = null;
@@ -262,30 +267,28 @@
 
         async function initHome() {
             try {
-                const resHero = await fetch(`${BASE_URL}/trending/movie/week?api_key=${API_KEY}&language=id-ID`);
-                const dataHero = await resHero.json();
+                const dataHero = await tmdbFetch('trending/movie/week', 'language=id-ID');
                 const heroMovie = dataHero.results[0];
-                
+
                 const heroImg = new Image();
                 heroImg.src = `https://image.tmdb.org/t/p/original${heroMovie.backdrop_path}`;
                 heroImg.onload = () => {
                     document.getElementById('hero').style.backgroundImage = `url(${heroImg.src})`;
                 };
-                
+
                 document.getElementById('heroTitle').innerText = heroMovie.title;
                 document.getElementById('heroDesc').innerText = heroMovie.overview;
                 document.getElementById('heroPlayBtn').onclick = () => navigateTo('detail', { id: heroMovie.id });
 
-                fetchRow(`${BASE_URL}/trending/movie/day?api_key=${API_KEY}&language=id-ID`, 'row-trending');
-                fetchRow(`${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=28&language=id-ID&sort_by=popularity.desc`, 'row-action');
-                fetchRow(`${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=27&language=id-ID&sort_by=popularity.desc`, 'row-horror');
-                fetchRow(`${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=35&language=id-ID&sort_by=popularity.desc`, 'row-comedy');
+                fetchRow('trending/movie/day', 'language=id-ID', 'row-trending');
+                fetchRow('discover/movie', 'with_genres=28&language=id-ID&sort_by=popularity.desc', 'row-action');
+                fetchRow('discover/movie', 'with_genres=27&language=id-ID&sort_by=popularity.desc', 'row-horror');
+                fetchRow('discover/movie', 'with_genres=35&language=id-ID&sort_by=popularity.desc', 'row-comedy');
             } catch(e) {}
         }
 
-        async function fetchRow(url, rowId) {
-            const res = await fetch(url);
-            const data = await res.json();
+        async function fetchRow(endpoint, query, rowId) {
+            const data = await tmdbFetch(endpoint, query);
             const row = document.getElementById(rowId);
             row.innerHTML = '';
             data.results.forEach(movie => {
@@ -316,21 +319,21 @@
             currentPage = pageNum;
             if (query) searchQuery = query;
 
-            let url = '';
+            let data;
             if (mode === 'popular') {
                 document.getElementById('exploreTitle').innerText = 'Jelajah Film';
                 document.getElementById('sortSelect').style.display = 'block';
                 let extraParam = currentSort === 'vote_average.desc' ? '&vote_count.gte=200' : '';
-                url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=id-ID&sort_by=${currentSort}${extraParam}&page=${currentPage}`;
+                const queryString = `language=id-ID&sort_by=${currentSort}${extraParam}&page=${currentPage}`;
+                data = await tmdbFetch('discover/movie', queryString);
             } else {
                 document.getElementById('exploreTitle').innerText = `Hasil: "${searchQuery}"`;
                 document.getElementById('sortSelect').style.display = 'none';
-                url = `${BASE_URL}/search/movie?api_key=${API_KEY}&language=id-ID&query=${encodeURIComponent(searchQuery)}&page=${currentPage}`;
+                const queryString = `language=id-ID&query=${encodeURIComponent(searchQuery)}&page=${currentPage}`;
+                data = await tmdbFetch('search/movie', queryString);
             }
 
             try {
-                const res = await fetch(url);
-                const data = await res.json();
                 totalPages = Math.min(data.total_pages, 500); 
                 
                 renderPagination();
@@ -422,12 +425,10 @@
         async function loadMovieDetail(tmdbId) {
             showSection('globalLoader');
             try {
-                let res = await fetch(`${BASE_URL}/movie/${tmdbId}?api_key=${API_KEY}&language=id-ID`);
-                let movie = await res.json();
+                let movie = await tmdbFetch(`movie/${tmdbId}`, 'language=id-ID');
                 
                 if (!movie.overview || movie.overview.trim() === '') {
-                    let resEn = await fetch(`${BASE_URL}/movie/${tmdbId}?api_key=${API_KEY}&language=en-US`);
-                    let movieEn = await resEn.json();
+                    let movieEn = await tmdbFetch(`movie/${tmdbId}`, 'language=en-US');
                     movie.overview = movieEn.overview || "Sinopsis tidak tersedia.";
                 }
                 
@@ -446,8 +447,7 @@
                 const coverImg = document.getElementById('cardMovieImg');
                 coverImg.src = `${IMG_URL}${movie.poster_path}`;
 
-                let resVid = await fetch(`${BASE_URL}/movie/${tmdbId}/videos?api_key=${API_KEY}`);
-                let vidData = await resVid.json();
+                let vidData = await tmdbFetch(`movie/${tmdbId}/videos`);
                 
                 activeTrailerKey = null;
                 const trailerCard = document.getElementById('trailerCard');
@@ -461,7 +461,7 @@
                     } else { trailerCard.style.display = 'none'; }
                 } else { trailerCard.style.display = 'none'; }
 
-                fetchRow(`${BASE_URL}/movie/${tmdbId}/similar?api_key=${API_KEY}&language=id-ID`, 'row-related');
+                fetchRow(`movie/${tmdbId}/similar`, 'language=id-ID', 'row-related');
 
                 showSection('detailView');
             } catch (err) {}
