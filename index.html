@@ -95,12 +95,23 @@
         .related-section { position: relative; z-index: 20; padding-bottom: 80px; }
         .related-section h2 { margin-left: 20px; color: white; font-weight: bold; font-size: 1.2rem; border-left: 3px solid var(--primary); padding-left: 10px; margin-bottom: 15px; }
 
-        /* Modal Player (Sandbox Sudah Dicabut) */
+        /* Native Player Modal */
         #playerModal { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; }
-        .player-header { padding: 15px; display: flex; justify-content: space-between; background: #111; border-bottom: 1px solid var(--primary);}
-        .server-selector { background: #222; color: white; padding: 8px; border-radius: 5px; border: 1px solid #444; outline: none; font-weight: bold;}
-        #playerModal iframe { width: 100%; flex: 1; border: none; }
-        .close-btn { font-size: 25px; color: #fff; line-height: 1; font-weight: bold; cursor: pointer;}
+        .player-header { padding: 12px 14px; display: flex; gap: 12px; align-items: center; justify-content: space-between; background: #111; border-bottom: 1px solid var(--primary);}
+        .server-selector { flex: 1; max-width: min(520px, calc(100vw - 70px)); background: #222; color: white; padding: 9px 10px; border-radius: 5px; border: 1px solid #444; outline: none; font-weight: bold;}
+        .player-body { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #000; }
+        .video-shell { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        #nativeVideo, #trailerIframe { width: 100%; height: 100%; border: none; background: #000; }
+        #nativeVideo { object-fit: contain; }
+        #trailerIframe { display: none; }
+        .player-message { position: absolute; left: 16px; right: 16px; bottom: 20px; padding: 12px 14px; background: rgba(20,20,20,0.88); border: 1px solid #333; border-radius: 8px; color: #eee; font-size: 0.9rem; line-height: 1.4; }
+        .player-message:empty { display: none; }
+        .close-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #222; border: 1px solid #444; border-radius: 50%; font-size: 20px; color: #fff; line-height: 1; font-weight: bold; cursor: pointer;}
+        @media (orientation: landscape) and (max-height: 500px) {
+            .player-header { padding: 8px 12px; }
+            .server-selector { padding: 6px 8px; }
+            .close-btn { width: 34px; height: 34px; }
+        }
 
         /* Bottom Navigation Modern */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10,10,10,0.98); border-top: 1px solid #222; display: flex; justify-content: space-around; z-index: 1000; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);}
@@ -182,13 +193,17 @@
     <div id="playerModal">
         <div class="player-header">
             <select class="server-selector" id="serverSelect" onchange="changeServer()">
-                <option value="vidsrc">Server Utama (VidSrc)</option>
-                <option value="embedsu">Server Alternatif 1 (EmbedSU)</option>
-                <option value="vidsrcpro">Server Alternatif 2 (VidSrc Pro)</option>
+                <option value="">Memuat sumber...</option>
             </select>
-            <span class="close-btn" onclick="closePlayer()">✖</span>
+            <button class="close-btn" onclick="closePlayer()" aria-label="Tutup player">X</button>
         </div>
-        <iframe id="videoIframe" src="" allowfullscreen></iframe>
+        <div class="player-body">
+            <div class="video-shell">
+                <video id="nativeVideo" controls playsinline preload="metadata" crossorigin="anonymous" controlsList="nodownload"></video>
+                <iframe id="trailerIframe" src="" title="Trailer" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div id="playerMessage" class="player-message"></div>
+        </div>
     </div>
 
     <div class="bottom-nav" id="bottomNav">
@@ -197,9 +212,11 @@
         <div class="nav-item" id="nav-history" onclick="navigateTo('history')">RIWAYAT</div>
     </div>
 
+    <script src="/vendor/hls.js/hls.min.js"></script>
     <script>
         const IMG_URL = 'https://image.tmdb.org/t/p/w500';
         const TMDB_PROXY = '/api/tmdb';
+        const STREAM_SOURCE_API = '/api/sources';
 
         let currentExploreMode = 'popular'; 
         let currentSort = 'popularity.desc';
@@ -213,6 +230,7 @@
         let currentPage = 1;
         let totalPages = 1;
         let activeMovieId = null;
+        let activeMoviePoster = '';
         let activeTrailerKey = null;
 
         function showSection(sectionId) {
@@ -433,6 +451,7 @@
                 }
                 
                 activeMovieId = movie.id;
+                activeMoviePoster = movie.poster_path ? `${IMG_URL}${movie.poster_path}` : '';
                 saveToHistory(movie);
 
                 const bgImg = new Image();
@@ -470,48 +489,197 @@
         function goBack() { history.back(); }
 
         let currentPlayType = 'movie';
-        function startPlayback(type) {
+        let activeSources = [];
+        let hlsPlayer = null;
+
+        async function startPlayback(type) {
             history.pushState({ page: 'player' }, '', '#player');
-            
+
             currentPlayType = type;
             const modal = document.getElementById('playerModal');
-            const iframe = document.getElementById('videoIframe');
+            const video = document.getElementById('nativeVideo');
+            const trailerFrame = document.getElementById('trailerIframe');
             const selector = document.getElementById('serverSelect');
-            
+
+            cleanupNativePlayer(false);
+            trailerFrame.src = '';
+            video.style.display = type === 'movie' ? 'block' : 'none';
+            trailerFrame.style.display = type === 'trailer' ? 'block' : 'none';
+            selector.style.display = type === 'movie' ? 'block' : 'none';
+            selector.disabled = true;
+            selector.innerHTML = '<option value="">Memuat sumber...</option>';
+            setPlayerMessage('');
             modal.style.display = 'flex';
-            
-            if (modal.requestFullscreen) modal.requestFullscreen();
-            else if (modal.webkitRequestFullscreen) modal.webkitRequestFullscreen();
+
+            enterPlayerFullscreen(modal);
 
             if (type === 'trailer') {
-                selector.style.display = 'none';
-                iframe.src = `https://www.youtube.com/embed/${activeTrailerKey}?autoplay=1`;
+                if (!activeTrailerKey) {
+                    setPlayerMessage('Trailer belum tersedia untuk judul ini.');
+                    return;
+                }
+
+                trailerFrame.src = `https://www.youtube.com/embed/${activeTrailerKey}?autoplay=1`;
             } else {
-                selector.style.display = 'block';
-                selector.value = 'vidsrc';
-                changeServer(); 
+                await loadMovieSources();
             }
         }
 
-        function changeServer() {
+        async function loadMovieSources() {
+            if (!activeMovieId) {
+                setPlayerMessage('Data film belum siap. Coba buka ulang detail film.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${STREAM_SOURCE_API}/movie/${activeMovieId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Gagal memuat source video.');
+                }
+
+                activeSources = Array.isArray(data.sources) ? data.sources : [];
+                if (!activeSources.length) {
+                    throw new Error('Belum ada source video legal untuk film ini.');
+                }
+
+                renderSourceOptions(activeSources);
+                await playSource(activeSources[0]);
+            } catch (error) {
+                activeSources = [];
+                renderSourceOptions([]);
+                setPlayerMessage(error.message || 'Gagal memuat source video.');
+            }
+        }
+
+        function renderSourceOptions(sources) {
+            const selector = document.getElementById('serverSelect');
+            selector.innerHTML = '';
+
+            if (!sources.length) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Source belum tersedia';
+                selector.appendChild(option);
+                selector.disabled = true;
+                return;
+            }
+
+            sources.forEach((source, index) => {
+                const option = document.createElement('option');
+                option.value = String(index);
+                option.textContent = source.label || `Server ${index + 1}`;
+                selector.appendChild(option);
+            });
+
+            selector.disabled = false;
+            selector.value = '0';
+        }
+
+        async function changeServer() {
             if (currentPlayType !== 'movie' || !activeMovieId) return;
-            const server = document.getElementById('serverSelect').value;
-            const iframe = document.getElementById('videoIframe');
-            
-            // 🔥 KITA PECAT VIDLINK, MASUKAN SERVER BARU YANG LEBIH TANGGUH 🔥
-            if (server === 'vidsrc') {
-                iframe.src = `https://vidsrc.me/embed/movie?tmdb=${activeMovieId}`;
-            } else if (server === 'embedsu') {
-                iframe.src = `https://embed.su/embed/movie/${activeMovieId}`;
-            } else if (server === 'vidsrcpro') {
-                iframe.src = `https://vidsrc.pro/embed/movie/${activeMovieId}`;
+            const index = Number(document.getElementById('serverSelect').value);
+            const source = activeSources[index];
+
+            if (source) {
+                await playSource(source);
+            }
+        }
+
+        async function playSource(source) {
+            const video = document.getElementById('nativeVideo');
+            cleanupNativePlayer(false);
+
+            if (activeMoviePoster) video.poster = activeMoviePoster;
+            addSubtitleTracks(video, source.subtitles);
+
+            const isHls = source.type === 'hls' || source.url.includes('.m3u8');
+            if (isHls) {
+                if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = source.url;
+                } else if (window.Hls && Hls.isSupported()) {
+                    hlsPlayer = new Hls({
+                        enableWorker: true,
+                        lowLatencyMode: true,
+                        backBufferLength: 90
+                    });
+                    hlsPlayer.loadSource(source.url);
+                    hlsPlayer.attachMedia(video);
+                    hlsPlayer.on(Hls.Events.ERROR, function(event, data) {
+                        if (data.fatal) {
+                            setPlayerMessage('Stream HLS bermasalah. Coba pilih kualitas lain.');
+                        }
+                    });
+                } else {
+                    setPlayerMessage('Browser ini belum mendukung HLS. Sediakan fallback MP4 untuk perangkat ini.');
+                    return;
+                }
+            } else {
+                video.src = source.url;
+            }
+
+            setPlayerMessage('');
+
+            try {
+                await video.play();
+            } catch (error) {
+                setPlayerMessage('Tekan tombol play untuk mulai. Browser memblokir autoplay.');
+            }
+        }
+
+        function addSubtitleTracks(video, subtitles = []) {
+            subtitles.forEach(track => {
+                const node = document.createElement('track');
+                node.kind = 'subtitles';
+                node.label = track.label || track.srclang || 'Subtitle';
+                node.srclang = track.srclang || 'id';
+                node.src = track.url;
+                node.default = Boolean(track.default);
+                video.appendChild(node);
+            });
+        }
+
+        function cleanupNativePlayer(clearPoster = true) {
+            const video = document.getElementById('nativeVideo');
+            if (hlsPlayer) {
+                hlsPlayer.destroy();
+                hlsPlayer = null;
+            }
+
+            video.pause();
+            video.removeAttribute('src');
+            if (clearPoster) video.removeAttribute('poster');
+            while (video.firstChild) video.removeChild(video.firstChild);
+            video.load();
+        }
+
+        function setPlayerMessage(message) {
+            document.getElementById('playerMessage').textContent = message || '';
+        }
+
+        function enterPlayerFullscreen(modal) {
+            if (modal.requestFullscreen) modal.requestFullscreen().catch(() => {});
+            else if (modal.webkitRequestFullscreen) modal.webkitRequestFullscreen();
+
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {});
             }
         }
 
         function closePlayer() {
             document.getElementById('playerModal').style.display = 'none';
-            document.getElementById('videoIframe').src = '';
-            if (document.exitFullscreen) document.exitFullscreen();
+            document.getElementById('trailerIframe').src = '';
+            cleanupNativePlayer();
+            activeSources = [];
+            setPlayerMessage('');
+
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+
+            if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
         }
 
         initHome();
