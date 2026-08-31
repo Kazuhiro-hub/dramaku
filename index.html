@@ -210,7 +210,7 @@
     <script>
         const IMG_URL = 'https://image.tmdb.org/t/p/w500';
         const TMDB_PROXY = '/api/tmdb';
-        const EMBED_PROXY = '/embed/movie';
+        const EMBED_PROXY = '/api/embed/movie';
         const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation';
 
         let currentExploreMode = 'popular'; 
@@ -218,7 +218,7 @@
         let searchQuery = '';
 
         async function tmdbFetch(path, query = '') {
-            const url = `${TMDB_PROXY}/${path}${query ? `?${query}` : ''}`;
+            const url = `${TMDB_PROXY}?path=${encodeURIComponent(path)}${query ? `&${query}` : ''}`;
             const res = await fetch(url);
             const data = await res.json().catch(() => ({}));
             if (!res.ok || data.error) {
@@ -558,7 +558,7 @@
             const iframe = document.getElementById('videoIframe');
             
             applyPlayerGuard(iframe);
-            iframe.src = `${EMBED_PROXY}/${encodeURIComponent(activeMovieId)}?provider=${encodeURIComponent(server)}`;
+            iframe.src = `${EMBED_PROXY}?tmdbId=${encodeURIComponent(activeMovieId)}&provider=${encodeURIComponent(server)}`;
         }
 
         function applyPlayerGuard(iframe) {

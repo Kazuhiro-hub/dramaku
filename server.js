@@ -47,8 +47,8 @@ function getEmbedProvider(providerKey) {
     return EMBED_PROVIDERS[providerKey] || EMBED_PROVIDERS.vidsrc;
 }
 
-app.get('/embed/movie/:tmdbId', (req, res) => {
-    const tmdbId = String(req.params.tmdbId || '').trim();
+function handleEmbedMovie(req, res) {
+    const tmdbId = String(req.params.tmdbId || req.query.tmdbId || '').trim();
     const providerKey = String(req.query.provider || 'vidsrc').toLowerCase();
 
     if (!/^\d+$/.test(tmdbId)) {
@@ -97,16 +97,27 @@ app.get('/embed/movie/:tmdbId', (req, res) => {
     </iframe>
 </body>
 </html>`);
-});
+}
 
-app.get('/api/tmdb/*tmdbPath', async (req, res) => {
+app.get('/embed/movie/:tmdbId', handleEmbedMovie);
+app.get('/api/embed/movie/:tmdbId', handleEmbedMovie);
+app.get('/api/embed/movie', handleEmbedMovie);
+
+async function handleTmdbProxy(req, res) {
     if (!TMDB_API_KEY) {
         return res.status(500).json({ error: 'TMDB API key not configured' });
     }
 
-    const tmdbPathParam = req.params.tmdbPath;
-    const tmdbPath = Array.isArray(tmdbPathParam) ? tmdbPathParam.join('/') : tmdbPathParam;
+    const tmdbPathParam = req.params.tmdbPath || req.query.path;
+    const tmdbPath = Array.isArray(tmdbPathParam) ? tmdbPathParam.join('/') : String(tmdbPathParam || '');
+
+    if (!/^[\w/-]+$/.test(tmdbPath) || tmdbPath.includes('..')) {
+        return res.status(400).json({ error: 'Invalid TMDB path' });
+    }
+
     const query = new URLSearchParams(req.query);
+    query.delete('path');
+    query.delete('tmdbPath');
     query.set('api_key', TMDB_API_KEY);
 
     try {
@@ -116,7 +127,10 @@ app.get('/api/tmdb/*tmdbPath', async (req, res) => {
         console.error('TMDB proxy error:', error.message);
         res.status(500).json({ error: 'TMDB proxy error' });
     }
-});
+}
+
+app.get('/api/tmdb', handleTmdbProxy);
+app.get('/api/tmdb/*tmdbPath', handleTmdbProxy);
 
 app.get('/', sendIndex);
 app.get('/index.html', sendIndex);
