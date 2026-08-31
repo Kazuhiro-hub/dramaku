@@ -184,9 +184,13 @@
     <div id="playerModal">
         <div class="player-header">
             <select class="server-selector" id="serverSelect" onchange="changeServer()">
-                <option value="vidsrc">Server Utama (VidSrc)</option>
-                <option value="embedsu">Server Alternatif 1 (EmbedSU)</option>
-                <option value="vidsrcpro">Server Alternatif 2 (VidSrc Pro)</option>
+                <option value="vidsrc">Server Utama (vidsrcme.ru)</option>
+                <option value="vidsrcme_su">Mirror (vidsrcme.su)</option>
+                <option value="vidsrc_me_ru">Mirror (vidsrc-me.ru)</option>
+                <option value="vidsrc_embed_ru">Mirror (vidsrc-embed.ru)</option>
+                <option value="vidsrc_embed_su">Mirror (vidsrc-embed.su)</option>
+                <option value="vsrc_su">Mirror (vsrc.su)</option>
+                <option value="vidsrc2_ru">Mirror (vidsrc2.ru)</option>
             </select>
             <span class="close-btn" onclick="closePlayer()">✖</span>
         </div>
@@ -284,6 +288,9 @@
         function getFriendlyError(error) {
             const message = error && error.message ? error.message : '';
             if (message.includes('TMDB API key not configured')) {
+                if (location.hostname.includes('vercel.app')) {
+                    return 'TMDB_API_KEY belum ada di Vercel Production Environment Variables. Tambahkan key di Vercel Dashboard, lalu redeploy production.';
+                }
                 return 'TMDB_API_KEY belum dikonfigurasi. Pastikan file .env berisi key TMDB, lalu restart server.';
             }
             return 'Gagal memuat data film. Periksa koneksi internet, konfigurasi TMDB, lalu restart server jika baru mengubah .env.';

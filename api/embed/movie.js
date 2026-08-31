@@ -1,19 +1,39 @@
 require('dotenv').config();
 
-const VIDSRC_BASE_URL = (process.env.VIDSRC_BASE_URL || 'https://vidsrc.me').replace(/\/+$/, '');
+const VIDSRC_BASE_URL = (process.env.VIDSRC_BASE_URL || 'https://vidsrcme.ru').replace(/\/+$/, '');
+
+function vidsrcUrl(domain, tmdbId) {
+    return `https://${domain}/embed/movie?tmdb=${encodeURIComponent(tmdbId)}`;
+}
 
 const EMBED_PROVIDERS = {
     vidsrc: {
-        label: 'VidSrc',
+        label: 'vidsrcme.ru',
         url: tmdbId => `${VIDSRC_BASE_URL}/embed/movie?tmdb=${encodeURIComponent(tmdbId)}`
     },
-    embedsu: {
-        label: 'EmbedSU',
-        url: tmdbId => `https://embed.su/embed/movie/${encodeURIComponent(tmdbId)}`
+    vidsrcme_su: {
+        label: 'vidsrcme.su',
+        url: tmdbId => vidsrcUrl('vidsrcme.su', tmdbId)
     },
-    vidsrcpro: {
-        label: 'VidSrc Pro',
-        url: tmdbId => `https://vidsrc.pro/embed/movie/${encodeURIComponent(tmdbId)}`
+    vidsrc_me_ru: {
+        label: 'vidsrc-me.ru',
+        url: tmdbId => vidsrcUrl('vidsrc-me.ru', tmdbId)
+    },
+    vidsrc_embed_ru: {
+        label: 'vidsrc-embed.ru',
+        url: tmdbId => vidsrcUrl('vidsrc-embed.ru', tmdbId)
+    },
+    vidsrc_embed_su: {
+        label: 'vidsrc-embed.su',
+        url: tmdbId => vidsrcUrl('vidsrc-embed.su', tmdbId)
+    },
+    vsrc_su: {
+        label: 'vsrc.su',
+        url: tmdbId => vidsrcUrl('vsrc.su', tmdbId)
+    },
+    vidsrc2_ru: {
+        label: 'vidsrc2.ru',
+        url: tmdbId => vidsrcUrl('vidsrc2.ru', tmdbId)
     }
 };
 
