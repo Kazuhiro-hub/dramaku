@@ -2,8 +2,9 @@
   "name": "captive-portal",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,6 +15,7 @@
     "axios": "^1.14.0",
     "cors": "^2.8.6",
     "dotenv": "^16.1.4",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "hls.js": "^1.7.1"
   }
 }
