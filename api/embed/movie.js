@@ -52,8 +52,9 @@ function getEmbedProvider(providerKey) {
 }
 
 module.exports = function handler(req, res) {
-    const tmdbId = String(req.query.tmdbId || '').trim();
-    const providerKey = String(req.query.provider || 'vidsrc').toLowerCase();
+    const requestUrl = new URL(req.url, 'http://localhost');
+    const tmdbId = String(requestUrl.searchParams.get('tmdbId') || '').trim();
+    const providerKey = String(requestUrl.searchParams.get('provider') || 'vidsrc').toLowerCase();
 
     if (!/^\d+$/.test(tmdbId)) {
         return res.status(400).send('Invalid TMDB id');

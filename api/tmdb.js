@@ -9,20 +9,14 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ error: 'TMDB API key not configured' });
     }
 
-    const tmdbPath = String(req.query.path || '').replace(/^\/+/, '');
+    const requestUrl = new URL(req.url, 'http://localhost');
+    const tmdbPath = String(requestUrl.searchParams.get('path') || '').replace(/^\/+/, '');
     if (!/^[\w/-]+$/.test(tmdbPath) || tmdbPath.includes('..')) {
         return res.status(400).json({ error: 'Invalid TMDB path' });
     }
 
-    const query = new URLSearchParams();
-    Object.entries(req.query).forEach(([key, value]) => {
-        if (key === 'path') return;
-        if (Array.isArray(value)) {
-            value.forEach(item => query.append(key, item));
-        } else if (value !== undefined) {
-            query.set(key, value);
-        }
-    });
+    const query = new URLSearchParams(requestUrl.searchParams);
+    query.delete('path');
     query.set('api_key', TMDB_API_KEY);
 
     try {
