@@ -4,7 +4,6 @@
 *.pyc
 *.swp
 node_modules/
-npm-debug.log*
 .buildlog/
 .history
 
@@ -52,7 +51,6 @@ unlinked_spec.ds
 apikeys.dart
 secrets.dart
 tmdb_key.txt
-video-sources.json
 backend/data/media-sources.json
 
 .vscode/
