@@ -11,6 +11,7 @@ const TMDB_BASE_URL = process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3
 const TMDB_IMG_URL = process.env.TMDB_IMG_URL || 'https://image.tmdb.org/t/p/w500';
 const NOICE_API_BASE = 'http://localhost:8080';
 const VIDSRC_BASE_URL = (process.env.VIDSRC_BASE_URL || 'https://vidsrcme.ru').replace(/\/+$/, '');
+const EMBED_SANDBOX = process.env.EMBED_SANDBOX === 'true';
 
 function vidsrcUrl(domain, tmdbId) {
     return `https://${domain}/embed/movie?tmdb=${encodeURIComponent(tmdbId)}`;
@@ -78,6 +79,9 @@ function handleEmbedMovie(req, res) {
     const provider = getEmbedProvider(providerKey);
     const targetUrl = provider.url(tmdbId);
     const targetOrigin = new URL(targetUrl).origin;
+    const sandboxAttr = EMBED_SANDBOX
+        ? 'sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"'
+        : '';
 
     res.set({
         'Cache-Control': 'no-store',
@@ -110,7 +114,7 @@ function handleEmbedMovie(req, res) {
     <iframe
         src="${escapeHtml(targetUrl)}"
         title="${escapeHtml(provider.label)}"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+        ${sandboxAttr}
         referrerpolicy="origin-when-cross-origin"
         allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
         allowfullscreen>

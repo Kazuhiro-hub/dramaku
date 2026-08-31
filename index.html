@@ -198,7 +198,6 @@
             id="videoIframe"
             src=""
             title="Video player"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
             referrerpolicy="origin-when-cross-origin"
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowfullscreen>
@@ -215,7 +214,6 @@
         const IMG_URL = 'https://image.tmdb.org/t/p/w500';
         const TMDB_PROXY = '/api/tmdb';
         const EMBED_PROXY = '/api/embed/movie';
-        const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation';
 
         let currentExploreMode = 'popular'; 
         let currentSort = 'popularity.desc';
@@ -569,7 +567,7 @@
         }
 
         function applyPlayerGuard(iframe) {
-            iframe.setAttribute('sandbox', PLAYER_SANDBOX);
+            iframe.removeAttribute('sandbox');
             iframe.setAttribute('referrerpolicy', 'origin-when-cross-origin');
             iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
         }

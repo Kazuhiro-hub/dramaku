@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const VIDSRC_BASE_URL = (process.env.VIDSRC_BASE_URL || 'https://vidsrcme.ru').replace(/\/+$/, '');
+const EMBED_SANDBOX = process.env.EMBED_SANDBOX === 'true';
 
 function vidsrcUrl(domain, tmdbId) {
     return `https://${domain}/embed/movie?tmdb=${encodeURIComponent(tmdbId)}`;
@@ -61,6 +62,9 @@ module.exports = function handler(req, res) {
     const provider = getEmbedProvider(providerKey);
     const targetUrl = provider.url(tmdbId);
     const targetOrigin = new URL(targetUrl).origin;
+    const sandboxAttr = EMBED_SANDBOX
+        ? 'sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"'
+        : '';
 
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Content-Security-Policy', [
@@ -92,7 +96,7 @@ module.exports = function handler(req, res) {
     <iframe
         src="${escapeHtml(targetUrl)}"
         title="${escapeHtml(provider.label)}"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+        ${sandboxAttr}
         referrerpolicy="origin-when-cross-origin"
         allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
         allowfullscreen>
