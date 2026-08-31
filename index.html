@@ -58,8 +58,10 @@
         .page-container { padding: 20px; min-height: 100vh; }
         .page-header { font-size: 1.5rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 20px; }
         .sort-select { background: #222; color: white; border: 1px solid #444; padding: 10px; border-radius: 5px; width: 100%; outline: none; margin-bottom: 10px;}
+        .inline-error { width: 100%; padding: 14px; color: #ddd; background: #181818; border: 1px solid #333; border-radius: 8px; line-height: 1.45; font-size: 0.92rem; }
         
         .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .grid-container .inline-error { grid-column: 1 / -1; }
         @media (max-width: 400px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
         .grid-item { width: 100%; display: flex; flex-direction: column; cursor: pointer;}
         .grid-item p { text-align: center; margin-top: 8px; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccc; }
@@ -225,7 +227,11 @@
         async function tmdbFetch(path, query = '') {
             const url = `${TMDB_PROXY}/${path}${query ? `?${query}` : ''}`;
             const res = await fetch(url);
-            return res.json();
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.error) {
+                throw new Error(data.error || `TMDB request failed (${res.status})`);
+            }
+            return data;
         }
         let currentPage = 1;
         let totalPages = 1;
@@ -283,6 +289,33 @@
             `;
         }
 
+        function getFriendlyError(error) {
+            const message = error && error.message ? error.message : '';
+            if (message.includes('TMDB API key not configured')) {
+                return 'TMDB_API_KEY belum dikonfigurasi. Buat file .env dari .env.example, isi API key TMDB, lalu restart server.';
+            }
+            return 'Gagal memuat data film. Periksa koneksi internet, konfigurasi TMDB, lalu restart server jika baru mengubah .env.';
+        }
+
+        function setInlineMessage(containerId, message) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            const el = document.createElement('p');
+            el.className = 'inline-error';
+            el.textContent = message;
+            container.appendChild(el);
+        }
+
+        function showHomeError(error) {
+            const message = getFriendlyError(error);
+            document.getElementById('heroTitle').innerText = 'Dramaku belum terhubung ke TMDB';
+            document.getElementById('heroDesc').innerText = message;
+            document.getElementById('heroPlayBtn').style.display = 'none';
+            ['row-trending', 'row-action', 'row-horror', 'row-comedy'].forEach(rowId => setInlineMessage(rowId, message));
+            showSection('homeView');
+        }
+
         async function initHome() {
             try {
                 const dataHero = await tmdbFetch('trending/movie/week', 'language=id-ID');
@@ -297,27 +330,34 @@
                 document.getElementById('heroTitle').innerText = heroMovie.title;
                 document.getElementById('heroDesc').innerText = heroMovie.overview;
                 document.getElementById('heroPlayBtn').onclick = () => navigateTo('detail', { id: heroMovie.id });
-
+                document.getElementById('heroPlayBtn').style.display = 'inline-block';
+                
                 fetchRow('trending/movie/day', 'language=id-ID', 'row-trending');
                 fetchRow('discover/movie', 'with_genres=28&language=id-ID&sort_by=popularity.desc', 'row-action');
                 fetchRow('discover/movie', 'with_genres=27&language=id-ID&sort_by=popularity.desc', 'row-horror');
                 fetchRow('discover/movie', 'with_genres=35&language=id-ID&sort_by=popularity.desc', 'row-comedy');
-            } catch(e) {}
+            } catch(e) {
+                showHomeError(e);
+            }
         }
 
         async function fetchRow(endpoint, query, rowId) {
-            const data = await tmdbFetch(endpoint, query);
             const row = document.getElementById(rowId);
-            row.innerHTML = '';
-            data.results.forEach(movie => {
-                if(movie.poster_path) {
-                    const div = document.createElement('div');
-                    div.className = 'poster-card';
-                    div.onclick = () => navigateTo('detail', { id: movie.id });
-                    div.innerHTML = createPosterHTML(movie);
-                    row.appendChild(div);
-                }
-            });
+            try {
+                const data = await tmdbFetch(endpoint, query);
+                row.innerHTML = '';
+                data.results.forEach(movie => {
+                    if(movie.poster_path) {
+                        const div = document.createElement('div');
+                        div.className = 'poster-card';
+                        div.onclick = () => navigateTo('detail', { id: movie.id });
+                        div.innerHTML = createPosterHTML(movie);
+                        row.appendChild(div);
+                    }
+                });
+            } catch (error) {
+                setInlineMessage(rowId, getFriendlyError(error));
+            }
         }
 
         function executeSearch() {
@@ -368,7 +408,12 @@
                     }
                 });
                 showSection('exploreView');
-            } catch (err) { showSection('exploreView'); }
+            } catch (err) {
+                totalPages = 1;
+                renderPagination();
+                setInlineMessage('exploreGrid', getFriendlyError(err));
+                showSection('exploreView');
+            }
         }
 
         function renderPagination() {
@@ -483,7 +528,9 @@
                 fetchRow(`movie/${tmdbId}/similar`, 'language=id-ID', 'row-related');
 
                 showSection('detailView');
-            } catch (err) {}
+            } catch (err) {
+                showHomeError(err);
+            }
         }
 
         function goBack() { history.back(); }

@@ -21,6 +21,10 @@ app.use(cors());
 app.use('/vendor/hls.js', express.static(path.join(__dirname, 'node_modules', 'hls.js', 'dist')));
 app.use(express.static(path.join(__dirname, 'public')));
 
+function sendIndex(req, res) {
+    res.sendFile(path.join(__dirname, 'index.html'));
+}
+
 function isHttpUrl(value) {
     try {
         const parsed = new URL(value);
@@ -165,9 +169,8 @@ app.get('/api/tmdb/*tmdbPath', async (req, res) => {
     }
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+app.get('/', sendIndex);
+app.get('/index.html', sendIndex);
 
 app.get('/api/sounds', async (req, res) => {
     try {
@@ -203,5 +206,5 @@ app.get('/api/stream/:trackId', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Server Proxy berjalan di http://localhost:${PORT}`);
-    console.log(`Akses Web Player: http://localhost:${PORT}/index.html`);
+    console.log(`Akses Web Player: http://localhost:${PORT}/ atau http://localhost:${PORT}/index.html`);
 });
