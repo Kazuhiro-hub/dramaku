@@ -10,7 +10,7 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3';
 const TMDB_IMG_URL = process.env.TMDB_IMG_URL || 'https://image.tmdb.org/t/p/w500';
 const NOICE_API_BASE = 'http://localhost:8080';
-const VIDSRC_BASE_URL = (process.env.VIDSRC_BASE_URL || 'https://vidsrcme.ru').replace(/\/+$/, '');
+const VIDSRC_BASE_URL = (process.env.VIDSRC_BASE_URL || 'https://vidsrc.win').replace(/\/+$/, '');
 const EMBED_SANDBOX = process.env.EMBED_SANDBOX === 'true';
 
 function vidsrcUrl(domain, tmdbId) {
